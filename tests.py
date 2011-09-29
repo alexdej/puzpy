@@ -1,25 +1,40 @@
 import os
 import unittest
-from puzfile import Puzzle
+import puz
 
 # this is just a place-holder at this point, need to add real tests
-class BasicTest(unittest.TestCase):
-  def runTest(self):
-   self.assertEqual(1,1) 
+class PuzzleTests(unittest.TestCase):
+    def test1(self):
+        self.assertEqual(1,1) 
+    def test2(self):
+        pass
 
-class ReadWriteTest(unittest.TestCase):
-  def runTest(self):
-    for filename in os.listdir('testfiles'):
-      if filename.endswith('.puz'):
+class RoundtripPuzfileTests(unittest.TestCase):
+    def __init__(self, filename):
+        unittest.TestCase.__init__(self)
+        self.filename = filename
+        
+    def runTest(self):
         try:
-          file = open('testfiles' + '/' + filename, 'rb')
-          orig = file.read()
-          puz = Puzzle.read(orig)
-          new = puz.getData()
+            orig = file(self.filename, 'rb').read()
+            p = puz.read(self.filename)
+            new = p.tostring()
+            self.assertEqual(orig, new, '%s did not round-trip' % self.filename)
         except:
-          print filename
-          raise
-        self.assertEqual(orig, new, '%s did not round-trip' % filename)
+            print self.filename
+            raise
+
+def suite():
+    # suite consists of any test* method defined in PuzzleTests, plus a round-trip
+    # test for each .puz file in ./testfiles/
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(PuzzleTests))
+    suite.addTests(map(
+        RoundtripPuzfileTests, 
+        ['testfiles/' + f for f in os.listdir('testfiles') if f.endswith('.puz')]))
+
+    return suite
 
 if __name__ == '__main__':
-  unittest.main()
+  print __file__
+  unittest.TextTestRunner().run(suite())
