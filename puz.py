@@ -11,7 +11,7 @@ header_cksum_format = '<BBH4s'
 maskstring = 'ICHEATED'
 ACROSSDOWN = 'ACROSS&DOWN'
 
-extension_header_format = '''< 4s  H H'''
+extension_header_format = '< 4s  H H'
 
 flags_normal = '\1\0\0\0'
 
@@ -50,6 +50,7 @@ class Puzzle:
         """Initializes a blank puzzle
         """
         self.preamble = ''
+        self.postscript = ''
         self.title = ''
         self.author = ''
         self.copyright = ''
@@ -94,7 +95,7 @@ class Puzzle:
         self.notes = s.read_string()
         
         ext_cksum = {}
-        while s.can_read():
+        while s.can_unpack(extension_header_format):
             code, length, cksum = s.unpack(extension_header_format)
             ext_cksum[code] = cksum
             # extension data is represented as a null-terminated string, but since the data can contain nulls
@@ -103,6 +104,10 @@ class Puzzle:
             s.read(1) # extensions have a trailing byte
             # save the codes in order for round-tripping
             self._extensions_order.append(code)
+
+        # sometimes there's some extra garbage at the end of the file, usually \r\n
+        if s.can_read():
+            self.postscript = s.read_to_end()
 
         if cksum_gbl != self.global_cksum():
             raise PuzzleFormatError('global checksum does not match')
@@ -157,6 +162,8 @@ class Puzzle:
         for code, data in ext.items():
             s.pack(extension_header_format, code, len(data), data_cksum(data))
             s.write(data + '\0')
+        
+        s.write(self.postscript)
         
         return s.tostring()
   
@@ -220,8 +227,8 @@ class PuzzleBuffer:
         self.enc = enc
         self.pos = 0
   
-    def can_read(self):
-        return self.pos < len(self.data)
+    def can_read(self, bytes=1):
+        return self.pos + bytes <= len(self.data)
   
     def length(self):
         return len(self.data)
@@ -229,7 +236,12 @@ class PuzzleBuffer:
     def read(self, bytes):
         start = self.pos
         self.pos += bytes
-        return self.data[start : self.pos]
+        return self.data[start:self.pos]
+
+    def read_to_end(self):
+        start = self.pos
+        self.pos = self.length()
+        return self.data[start:self.pos]
   
     def read_string(self):
         return self.read_until('\0')
@@ -259,10 +271,17 @@ class PuzzleBuffer:
     def pack(self, format, *values):
         self.data.append(struct.pack(format, *values))
   
+    def can_unpack(self, format):
+        return self.can_read(struct.calcsize(format))
+  
     def unpack(self, format):
-        res = struct.unpack_from(format, self.data, self.pos)
-        self.pos += struct.calcsize(format)
-        return res
+        start = self.pos
+        try:
+            res = struct.unpack_from(format, self.data, self.pos)
+            self.pos += struct.calcsize(format)
+            return res
+        except struct.error:
+            raise PuzzleFormatError('could not unpack values at %d for format %s' % (start, format))
         
     def tostring(self):
         return ''.join(self.data)

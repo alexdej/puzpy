@@ -1,4 +1,6 @@
 import os
+import sys
+import glob
 import unittest
 import puz
 
@@ -20,18 +22,20 @@ class RoundtripPuzfileTests(unittest.TestCase):
             p = puz.read(self.filename)
             new = p.tostring()
             self.assertEqual(orig, new, '%s did not round-trip' % self.filename)
-        except:
-            print self.filename
-            raise
+        except puz.PuzzleFormatError:
+            self.assertTrue(False, '%s threw PuzzleFormatError: %s' % (self.filename, sys.exc_info()[1].message))
+
+def tests_in_dir(dir):
+    return sum((map(RoundtripPuzfileTests, glob.glob(os.path.join(path, '*.puz')))
+                for path, dirs, files in os.walk(dir)), [])
 
 def suite():
     # suite consists of any test* method defined in PuzzleTests, plus a round-trip
     # test for each .puz file in ./testfiles/
     suite = unittest.TestSuite()
     suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(PuzzleTests))
-    suite.addTests(map(
-        RoundtripPuzfileTests, 
-        ['testfiles/' + f for f in os.listdir('testfiles') if f.endswith('.puz')]))
+    suite.addTests(tests_in_dir('testfiles'))
+    #suite.addTests(tests_in_dir('../xwordapp/data/'))
 
     return suite
 
