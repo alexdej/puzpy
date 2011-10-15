@@ -4,10 +4,11 @@ import glob
 import unittest
 import puz
 
-# this is just a place-holder at this point, need to add real tests
 class PuzzleTests(unittest.TestCase):
-    def test1(self):
-        pass
+    def testClueNumbering(self):
+        p = puz.read('testfiles/washpost.puz')
+        clues = p.clue_numbering()
+        self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
         
 class LockTests(unittest.TestCase):
     def testScrambleFunctions(self):

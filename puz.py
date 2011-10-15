@@ -12,6 +12,7 @@ header_format = '''<
 header_cksum_format = '<BBH I   '
 maskstring = 'ICHEATED'
 ACROSSDOWN = 'ACROSS&DOWN'
+BLACKSQUARE = '.'
 
 extension_header_format = '< 4s  H H '
 
@@ -175,6 +176,9 @@ class Puzzle:
         
         return s.tostring()
   
+    def clue_numbering(self):
+        return DefaultClueNumbering(self.fill, self.clues, self.width, self.height)
+  
     def is_solution_locked(self):
         return bool(self.flags >> 16)
   
@@ -326,6 +330,55 @@ class PuzzleBuffer:
         return ''.join(self.data)
 
 
+# clue numbering helper
+
+class DefaultClueNumbering:
+    def __init__(self, grid, clues, width, height):
+        self.grid = grid
+        self.clues = clues
+        self.width = width
+        self.height = height
+
+        # compute across & down
+        a = []
+        d = []
+        c = 0
+        n = 1
+        for i in xrange(0, len(grid)):
+            if not is_blacksquare(grid[i]):
+                lastc = c
+                if (self.col(i) == 0 or is_blacksquare(grid[i - 1])) and self.len_across(i) > 2:
+                    clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_across(i) }
+                    a.append(clue)
+                    c += 1
+                if (self.row(i) == 0 or is_blacksquare(grid[i - width])) and self.len_down(i) > 2:
+                    clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_down(i) }
+                    d.append(clue)
+                    c += 1
+                if c > lastc:
+                    n += 1
+
+        self.across = a
+        self.down = d
+    
+    def col(self, index):
+        return index % self.width
+    
+    def row(self, index):
+        return index / self.width
+
+    def len_across(self, index):
+        for c in xrange(0, self.width - self.col(index)):
+            if is_blacksquare(self.grid[index + c]):
+                return c    
+        return c + 1
+    
+    def len_down(self, index):
+        for c in xrange(0, self.height - self.row(index)):
+            if is_blacksquare(self.grid[index + c*self.width]):
+                return c
+        return c + 1
+    
 # helper functions for cksums and scrambling
 def data_cksum(data, cksum=0):
     for c in data:
@@ -342,7 +395,7 @@ def data_cksum(data, cksum=0):
 
 def scramble_solution(solution, width, height, key):
     sq = square(solution, width, height)
-    return square(restore(sq, scramble_string(sq.replace('.', ''), key)), height, width)
+    return square(restore(sq, scramble_string(sq.replace(BLACKSQUARE, ''), key)), height, width)
 
 def scramble_string(s, key):
     """
@@ -368,7 +421,7 @@ def scramble_string(s, key):
 def unscramble_solution(scrambled, width, height, key):
     # width and height are reversed here
     sq = square(scrambled, width, height)
-    return square(restore(sq, unscramble_string(sq.replace('.', ''), key)), height, width)
+    return square(restore(sq, unscramble_string(sq.replace(BLACKSQUARE, ''), key)), height, width)
     
 def unscramble_string(s, key):
     key = key_digits(key)
@@ -381,7 +434,7 @@ def unscramble_string(s, key):
     return s
 
 def scrambled_cksum(scrambled, width, height):
-    return data_cksum(square(scrambled, width, height).replace('.', ''))
+    return data_cksum(square(scrambled, width, height).replace(BLACKSQUARE, ''))
 
 def key_digits(key):
     return [int(c) for c in str(key).zfill(4)]
@@ -414,5 +467,9 @@ def restore(s, t):
     'XYZ.ABC'
     """
     t = (c for c in t)
-    return ''.join(t.next() if c != '.' else c for c in s)
+    return ''.join(t.next() if not is_blacksquare(c) else c for c in s)
+
+def is_blacksquare(c):
+    return c == BLACKSQUARE
+
 
