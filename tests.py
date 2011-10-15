@@ -9,7 +9,45 @@ class PuzzleTests(unittest.TestCase):
         p = puz.read('testfiles/washpost.puz')
         clues = p.clue_numbering()
         self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
+    
+    def testExtensions(self):
+        p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+        self.assertTrue(puz.Extensions.Rebus in p.extensions)
+        self.assertTrue(puz.Extensions.RebusSolutions in p.extensions)
+        self.assertTrue(puz.Extensions.Markup in p.extensions)
+
+    def testRebus(self):
+        p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+        self.assertTrue(p.has_rebus())
+        r = p.rebus()
+        self.assertTrue(r.has_rebus())
+        self.assertEqual(3, len(r.get_rebus_squares()))
+        self.assertTrue(all(r.is_rebus_square(i) for i in r.get_rebus_squares()))
+        self.assertTrue(all('STAR' == r.get_rebus_solution(i) for i in r.get_rebus_squares()))
+        self.assertTrue(None == r.get_rebus_solution(100))
+        # trigger save
+        p.tostring()
+
+    def testMarkup(self):
+        p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+        self.assertTrue(p.has_markup())
+        m = p.markup()
+        self.assertTrue(all(puz.GridMarkup.Circled == m.markup[i] for i in m.get_markup_squares()))
+        # trigger save
+        p.tostring()
         
+        p = puz.read('testfiles/washpost.puz')
+        self.assertFalse(p.has_markup())
+        m = p.markup()
+        self.assertFalse(m.has_markup())
+        # trigger save
+        p.tostring()
+
+    def testPuzzleType(self):
+        self.assertFalse(puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Diagramless)
+        self.assertFalse(puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Diagramless)
+        self.assertTrue(puz.read('testfiles/nyt_diagramless.puz').puzzletype == puz.PuzzleType.Diagramless)
+                
 class LockTests(unittest.TestCase):
     def testScrambleFunctions(self):
         ''' tests some examples from the file format documentation wiki
@@ -64,6 +102,11 @@ class RoundtripPuzfileTests(unittest.TestCase):
         try:
             orig = file(self.filename, 'rb').read()
             p = puz.read(self.filename)
+            if (p.puzzletype == puz.PuzzleType.Normal):
+                clues = p.clue_numbering()
+                # smoke test the clue numbering while we're at it
+                self.assertEqual(len(p.clues), len(clues.across) + len(clues.down), 'failed in %s' % self.filename)
+            # this is the roundtrip
             new = p.tostring()
             self.assertEqual(orig, new, '%s did not round-trip' % self.filename)
         except puz.PuzzleFormatError:
