@@ -1,19 +1,22 @@
 ﻿import struct
 import logging
+import string
+import operator
 
 header_format = '''<
              H 11s        xH
-             Q       3s 17s
-                         BBH
-             4s'''
+             Q       4s  2sH
+             12s         BBH
+             I   '''
 
-header_cksum_format = '<BBH4s'
+header_cksum_format = '<BBH I   '
 maskstring = 'ICHEATED'
 ACROSSDOWN = 'ACROSS&DOWN'
 
-extension_header_format = '< 4s  H H'
+extension_header_format = '< 4s  H H '
 
-flags_normal = '\1\0\0\0'
+flags_lock_bit = 0x40000
+flags_lock_mask = 0xffff0000
 
 def read(filename):
     """Read a .puz file and return the Puzzle object
@@ -56,16 +59,19 @@ class Puzzle:
         self.copyright = ''
         self.width = 0
         self.height = 0
-        self.fileversion = '1.3' # default
+        self.version = '1.3'
+        self.fileversion = '1.3\0' # default
         # these are bytes that might be unused
-        self.unk = '\0' * 17
+        self.unk1 = '\0' * 2
+        self.unk2 = '\0' * 12
+        self.scrambled_cksum = 0
         self.fill = ''
-        self.answers = ''
+        self.solution = ''
         self.clues = []
         self.notes = ''
         self.extensions = {}
-        self._extensions_order = [] # so that we can round-trip values in order for test purposes
-        self.flags = flags_normal
+        self._extensions_order = [] # so that we can round-trip values in order
+        self.flags = 0x01
 
     def load(self, data):
         s = PuzzleBuffer(data)
@@ -73,18 +79,19 @@ class Puzzle:
         # advance to start - files may contain some data before the start of the puzzle
         # use the ACROSS&DOWN magic string as a waypoint
         # save the preamble for round-tripping
-        s.seek_to(ACROSSDOWN, -2)
+        if not s.seek_to(ACROSSDOWN, -2):
+            raise PuzzleFormatError("Data does not appear to represent a puzzle. Are you sure you didn't intend to use read?")
+            
         self.preamble = s.data[:s.pos]
         
         (cksum_gbl, acrossDown, cksum_hdr, cksum_magic,
-         self.fileversion, self.unk, # since we don't know the role of these bytes, just round-trip them
+         self.fileversion, self.unk1, # since we don't know the role of these bytes, just round-trip them
+         self.scrambled_cksum, self.unk2,
          self.width, self.height, numclues, self.flags
         ) = s.unpack(header_format)
         
-        if acrossDown != ACROSSDOWN:
-            raise PuzzleFormatError('invalid puz file: does not contain correct header')
-
-        self.answers = s.read(self.width * self.height)
+        self.version = self.fileversion[:3]
+        self.solution = s.read(self.width * self.height)
         self.fill = s.read(self.width * self.height)
 
         self.title = s.read_string()
@@ -133,10 +140,11 @@ class Puzzle:
         
         s.pack(header_format,
                 self.global_cksum(), ACROSSDOWN, self.header_cksum(), self.magic_cksum(),
-                self.fileversion, self.unk, self.width, self.height, 
+                self.fileversion, self.unk1, self.scrambled_cksum,
+                self.unk2, self.width, self.height, 
                 len(self.clues), self.flags)
 
-        s.write(self.answers)
+        s.write(self.solution)
         s.write(self.fill)
         
         s.write_string(self.title)
@@ -167,6 +175,35 @@ class Puzzle:
         
         return s.tostring()
   
+    def is_solution_locked(self):
+        return bool(self.flags >> 16)
+  
+    def unlock_solution(self, key):
+        if self.is_solution_locked():
+            unscrambled = unscramble_solution(self.solution, self.width, self.height, key)
+            if not self.check_answers(unscrambled):
+                return False
+
+            # clear the scrambled bit and cksum
+            self.solution = unscrambled
+            self.scrambled_cksum = 0
+            self.flags = self.flags & ~flags_lock_mask
+
+        return True
+
+    def lock_solution(self, key):
+        if not self.is_solution_locked():
+            # set the scrambled bit and cksum
+            self.scrambled_cksum = scrambled_cksum(self.solution, self.width, self.height)
+            self.flags = self.flags | flags_lock_bit
+            self.solution = scramble_solution(self.solution, self.width, self.height, key)
+  
+    def check_answers(self, fill):
+        if self.is_solution_locked():
+            return scrambled_cksum(fill, self.width, self.height) == self.scrambled_cksum
+        else:
+            return fill == self.solution
+  
     def header_cksum(self, cksum=0):
         return data_cksum(struct.pack(header_cksum_format, 
             self.width, self.height, len(self.clues), self.flags), cksum)
@@ -174,7 +211,7 @@ class Puzzle:
     def text_cksum(self, cksum=0):
         # for the checksum to work these fields must be added in order with
         # null termination, followed by all non-empty clues without null
-        # termination, followed by notes (but only for fileversion 1.3)
+        # termination, followed by notes (but only for version 1.3)
         if self.title:
             cksum = data_cksum(self.title + '\0', cksum)
         if self.author:
@@ -187,14 +224,14 @@ class Puzzle:
                 cksum = data_cksum(clue, cksum)
     
         # notes included in global cksum only in v1.3 of format
-        if self.fileversion == '1.3' and self.notes:
+        if self.version == '1.3' and self.notes:
             cksum = data_cksum(self.notes + '\0', cksum)
         
         return cksum
         
     def global_cksum(self):
         cksum = self.header_cksum()
-        cksum = data_cksum(self.answers, cksum)
+        cksum = data_cksum(self.solution, cksum)
         cksum = data_cksum(self.fill, cksum)
         cksum = self.text_cksum(cksum)
         # extensions do not seem to be included in global cksum
@@ -203,7 +240,7 @@ class Puzzle:
     def magic_cksum(self):
         cksums = [
             self.header_cksum(),
-            data_cksum(self.answers),
+            data_cksum(self.solution),
             data_cksum(self.fill),
             self.text_cksum()
         ]
@@ -257,9 +294,11 @@ class PuzzleBuffer:
     def seek_to(self, s, offset=0):
         try:
             self.pos = self.data.index(s, self.pos) + offset
+            return True
         except ValueError:
             # s not found, advance to end
             self.pos = self.length()
+            return False
     
     def write(self, s):
         self.data.append(s)
@@ -287,7 +326,7 @@ class PuzzleBuffer:
         return ''.join(self.data)
 
 
-# helper functions for cksums
+# helper functions for cksums and scrambling
 def data_cksum(data, cksum=0):
     for c in data:
         b = ord(c)
@@ -300,4 +339,80 @@ def data_cksum(data, cksum=0):
         cksum = (cksum + b) & 0xffff
   
     return cksum
+
+def scramble_solution(solution, width, height, key):
+    sq = square(solution, width, height)
+    return square(restore(sq, scramble_string(sq.replace('.', ''), key)), height, width)
+
+def scramble_string(s, key):
+    """
+    s is the puzzle's solution in column-major order, omitting black squares:    
+    i.e. if the puzzle is:
+        C A T
+        # # A
+        # # R
+    solution is CATAR    
+
+
+    Key is a 4-digit number in the range 1000 <= key <= 9999
+
+    """
+    key = key_digits(key)
+    for k in key: # foreach digit in the key
+        s = shift(s, key)  # xform each char by each digit in the key in sequence
+        s = s[k:] + s[:k]  # cut the sequence around the key digit
+        s = shuffle(s)     # do a 1:1 shuffle of the 'deck'
+
+    return s
+
+def unscramble_solution(scrambled, width, height, key):
+    # width and height are reversed here
+    sq = square(scrambled, width, height)
+    return square(restore(sq, unscramble_string(sq.replace('.', ''), key)), height, width)
+    
+def unscramble_string(s, key):
+    key = key_digits(key)
+    l = len(s)
+    for k in key[::-1]:
+        s = unshuffle(s)
+        s = s[l-k:] + s[:l-k]
+        s = unshift(s, key)
+
+    return s
+
+def scrambled_cksum(scrambled, width, height):
+    return data_cksum(square(scrambled, width, height).replace('.', ''))
+
+def key_digits(key):
+    return [int(c) for c in str(key).zfill(4)]
+
+def square(data, w, h):
+    aa = [data[i:i+w] for i in range(0, len(data), w)]
+    return ''.join([''.join([aa[r][c] for r in range(0, h)]) for c in range(0, w)])
+
+def shift(s, key):
+    atoz = string.uppercase
+    return ''.join(atoz[(atoz.index(c) + key[i % len(key)]) % len(atoz)] for i, c in enumerate(s))
+
+def unshift(s, key):
+    return shift(s, [-k for k in key])
+
+def shuffle(s):
+    mid = len(s) / 2
+    return ''.join(reduce(operator.add, zip(s[mid:], s[:mid]))) + (s[-1] if len(s) % 2 else '')
+
+def unshuffle(s):
+    return s[1::2] + s[::2]
+
+def restore(s, t):
+    """
+    s is the source string, it can contain '.'
+    t is the target, it's smaller than s by the number of '.'s in s
+    each char in s is replaced by the corresponding char in t, jumping over '.'s in s
+
+    >>> restore('ABC.DEF', 'XYZABC')
+    'XYZ.ABC'
+    """
+    t = (c for c in t)
+    return ''.join(t.next() if c != '.' else c for c in s)
 
