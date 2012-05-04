@@ -386,11 +386,11 @@ class DefaultClueNumbering:
         for i in xrange(0, len(grid)):
             if not is_blacksquare(grid[i]):
                 lastc = c
-                if (self.col(i) == 0 or is_blacksquare(grid[i - 1])) and self.len_across(i) > 2:
+                if (self.col(i) == 0 or is_blacksquare(grid[i - 1])) and self.len_across(i) > 1:
                     clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_across(i) }
                     a.append(clue)
                     c += 1
-                if (self.row(i) == 0 or is_blacksquare(grid[i - width])) and self.len_down(i) > 2:
+                if (self.row(i) == 0 or is_blacksquare(grid[i - width])) and self.len_down(i) > 1:
                     clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_down(i) }
                     d.append(clue)
                     c += 1
