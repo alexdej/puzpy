@@ -34,7 +34,7 @@ GridMarkup = enum(Default=0x00,              # ordinary grid cell
                  
 # refer to Extensions as Extensions.Rebus, Extensions.Markup
 Extensions = enum(Rebus='GRBS',             # grid of rebus indices: 0 for non-rebus; i+1 for key i into RebusSolutions map
-                  RebusSolutions='RTBL',    # map of rebus solution entries eg 0:HEART; 1:DIAMOND; 17:CLUB; 23:SPADE
+                  RebusSolutions='RTBL',    # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
                   RebusFill='RUSR',         # user's rebus entries
                   Timer='LTIM',             # timer state: 'a,b' where a is the number of seconds elapsed and b is a boolean (0,1) for whether the timer is running
                   Markup='GEXT')            # grid cell markup: previously incorrect: 0x10; currently incorrect: 0x20, hinted: 0x40, circled: 0x80
@@ -449,7 +449,7 @@ class Rebus:
         if self.has_rebus():
             # commit changes back to puzzle.extensions
             self.puzzle.extensions[Extensions.Rebus] = from_byte_array(self.table)
-            self.puzzle.extensions[Extensions.RebusSolutions] = ';'.join(str(k) + ':' + v for k,v in self.solutions.items())
+            self.puzzle.extensions[Extensions.RebusSolutions] = ';'.join(str(k) + ':' + v for k,v in self.solutions.items()) + ';'
             self.puzzle.extensions[Extensions.RebusFill] = ';'.join(str(k) + ':' + v for k,v in self.fill.items())
 
 class Markup:
