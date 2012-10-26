@@ -422,9 +422,9 @@ class Rebus:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse rebus data
-        self.table = to_byte_array(self.puzzle.extensions.get(Extensions.Rebus, ''))
-        self.solutions = dict(map(lambda p: (int(p[0]), p[1]), to_dict(self.puzzle.extensions.get(Extensions.RebusSolutions, '')).items()))
-        self.fill = dict(map(lambda p: (int(p[0]), p[1]), to_dict(self.puzzle.extensions.get(Extensions.RebusFill, '')).items()))
+        self.table = parse_bytes(self.puzzle.extensions.get(Extensions.Rebus, ''))
+        self.solutions = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(self.puzzle.extensions.get(Extensions.RebusSolutions, '')).items()))
+        self.fill = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(self.puzzle.extensions.get(Extensions.RebusFill, '')).items()))
 
     def has_rebus(self):
         return Extensions.Rebus in self.puzzle.extensions
@@ -448,15 +448,15 @@ class Rebus:
     def save(self):
         if self.has_rebus():
             # commit changes back to puzzle.extensions
-            self.puzzle.extensions[Extensions.Rebus] = from_byte_array(self.table)
-            self.puzzle.extensions[Extensions.RebusSolutions] = ';'.join(str(k) + ':' + v for k,v in self.solutions.items()) + ';'
-            self.puzzle.extensions[Extensions.RebusFill] = ';'.join(str(k) + ':' + v for k,v in self.fill.items())
+            self.puzzle.extensions[Extensions.Rebus] = bytes_to_string(self.table)
+            self.puzzle.extensions[Extensions.RebusSolutions] = dict_to_string(self.solutions)
+            self.puzzle.extensions[Extensions.RebusFill] = dict_to_string(self.fill)
 
 class Markup:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse markup data
-        self.markup = to_byte_array(self.puzzle.extensions.get(Extensions.Markup, ''))
+        self.markup = parse_bytes(self.puzzle.extensions.get(Extensions.Markup, ''))
 
     def has_markup(self):
         return any(bool(b) for b in self.markup)
@@ -469,7 +469,7 @@ class Markup:
 
     def save(self):
         if self.has_markup():
-            self.puzzle.extensions[Extensions.Markup] = from_byte_array(self.markup)
+            self.puzzle.extensions[Extensions.Markup] = bytes_to_string(self.markup)
 
 # helper functions for cksums and scrambling
 def data_cksum(data, cksum=0):
@@ -564,14 +564,20 @@ def restore(s, t):
 def is_blacksquare(c):
     return c == BLACKSQUARE
 
-def to_byte_array(s):
+#
+# functions for parsing / serializing primitives
+#
+
+def parse_bytes(s):
     return list(struct.unpack('B' * len(s), s))
 
-def from_byte_array(a):
+def bytes_to_string(a):
     return struct.pack('B' * len(a), *a)
 
-def to_dict(s):
+# dict string format is k1:v1;k2:v2;...;kn:vn;
+# (for whatever reason there's a trailing ';')
+def parse_dict(s):
     return dict(p.split(':') for p in s.split(';') if ':' in p)
 
-def from_dict(d):
-    ';'.join(':'.join(map(str, [k,v]) for k,v in d.items()))
+def dict_to_string(d):
+    return ';'.join(':'.join(map(str, [k,v])) for k,v in d.items()) + ';'
