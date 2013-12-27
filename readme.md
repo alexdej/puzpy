@@ -6,3 +6,5 @@ The parser is as strict as Across Lite, enforcing internal checksums and magic s
 
 In addition to the handful of tests checked in here, the library has been tested on over 9700 .puz files drawn from the archives of several publications including The New York Times, The Washington Post, The Onion, and, the Wall Street Journal. As of writing, it can round-trip 100% of them with full fidelity.
 
+MIT License.
+
