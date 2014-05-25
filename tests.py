@@ -100,7 +100,7 @@ class RoundtripPuzfileTests(unittest.TestCase):
         
     def runTest(self):
         try:
-            orig = file(self.filename, 'rb').read()
+            orig = open(self.filename, 'rb').read()
             p = puz.read(self.filename)
             if (p.puzzletype == puz.PuzzleType.Normal):
                 clues = p.clue_numbering()
@@ -113,7 +113,7 @@ class RoundtripPuzfileTests(unittest.TestCase):
             self.assertTrue(False, '%s threw PuzzleFormatError: %s' % (self.filename, sys.exc_info()[1].message))
     
 def tests_in_dir(dir):
-    return sum((map(RoundtripPuzfileTests, glob.glob(os.path.join(path, '*.puz')))
+    return sum((list(map(RoundtripPuzfileTests, glob.glob(os.path.join(path, '*.puz'))))
                 for path, dirs, files in os.walk(dir)), [])
 
 def suite():
@@ -128,5 +128,5 @@ def suite():
     return suite
 
 if __name__ == '__main__':
-  print __file__
+  print(__file__)
   unittest.TextTestRunner().run(suite())
