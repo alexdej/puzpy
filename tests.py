@@ -76,7 +76,8 @@ class LockTests(unittest.TestCase):
         self.assertTrue('LAKEONTARIO' in p.solution)
 
     def testUnlockRelock(self):
-        orig = file('testfiles/nyt_locked.puz', 'rb').read()
+        with open('testfiles/nyt_locked.puz', 'rb') as fp:
+            orig = fp.read()
         p = puz.read('testfiles/nyt_locked.puz')
         self.assertTrue(p.is_solution_locked())
         self.assertTrue(p.unlock_solution(7844))
@@ -111,7 +112,7 @@ class RoundtripPuzfileTests(unittest.TestCase):
             self.assertEqual(orig, new, '%s did not round-trip' % self.filename)
         except puz.PuzzleFormatError:
             self.assertTrue(False, '%s threw PuzzleFormatError: %s' % (self.filename, sys.exc_info()[1].message))
-    
+
 def tests_in_dir(dir):
     return sum((list(map(RoundtripPuzfileTests, glob.glob(os.path.join(path, '*.puz'))))
                 for path, dirs, files in os.walk(dir)), [])
