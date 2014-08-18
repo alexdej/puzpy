@@ -9,7 +9,7 @@ class PuzzleTests(unittest.TestCase):
         p = puz.read('testfiles/washpost.puz')
         clues = p.clue_numbering()
         self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
-    
+
     def testExtensions(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
         self.assertTrue(puz.Extensions.Rebus in p.extensions)
@@ -35,7 +35,7 @@ class PuzzleTests(unittest.TestCase):
         self.assertTrue(all(puz.GridMarkup.Circled == m.markup[i] for i in m.get_markup_squares()))
         # trigger save
         p.tostring()
-        
+
         p = puz.read('testfiles/washpost.puz')
         self.assertFalse(p.has_markup())
         m = p.markup()
@@ -47,7 +47,7 @@ class PuzzleTests(unittest.TestCase):
         self.assertFalse(puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Diagramless)
         self.assertFalse(puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Diagramless)
         self.assertTrue(puz.read('testfiles/nyt_diagramless.puz').puzzletype == puz.PuzzleType.Diagramless)
-                
+
 class LockTests(unittest.TestCase):
     def testScrambleFunctions(self):
         ''' tests some examples from the file format documentation wiki
@@ -57,11 +57,11 @@ class LockTests(unittest.TestCase):
 
         self.assertEqual('AEBFCDG', puz.unscramble_string('MLOOPKJ', 1234))
         self.assertEqual('ABC..DEFG', puz.unscramble_solution('MOP..KLOJ', 3, 3, 1234))
-        
+
         # rectangular example - tricky
         a = 'ABCD.EFGH.KHIJKLM.NOPW.XYZ'
         self.assertEqual(a, puz.unscramble_solution(puz.scramble_solution(a, 13, 2, 9721), 13, 2, 9721))
-        
+
     def testLockedBit(self):
         self.assertFalse(puz.read('testfiles/washpost.puz').is_solution_locked())
         self.assertTrue(puz.read('testfiles/nyt_locked.puz').is_solution_locked())
@@ -83,7 +83,7 @@ class LockTests(unittest.TestCase):
         p.lock_solution(7844)
         new = p.tostring()
         self.assertEqual(orig, new, 'nyt_locked.puz dit not found-trip')
-        
+
     def testCheckAnswersLocked(self):
         '''Verify that we can check answers even when the solution is locked
         '''
@@ -97,7 +97,7 @@ class RoundtripPuzfileTests(unittest.TestCase):
     def __init__(self, filename):
         unittest.TestCase.__init__(self)
         self.filename = filename
-        
+
     def runTest(self):
         try:
             orig = open(self.filename, 'rb').read()
