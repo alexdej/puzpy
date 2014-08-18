@@ -60,7 +60,7 @@ def load(data):
     return puz
 
 
-class PuzzleFormatError:
+class PuzzleFormatError(Exception):
     """Indicates a format error in the .puz file
     May be thrown due to invalid headers, invalid checksum validation, or other format issues
     """
