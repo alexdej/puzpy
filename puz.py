@@ -104,7 +104,7 @@ class Puzzle:
         # advance to start - files may contain some data before the start of the puzzle
         # use the ACROSS&DOWN magic string as a waypoint
         # save the preamble for round-tripping
-        if not s.seek_to(ACROSSDOWN, -2):
+        if not s.seek_to(ACROSSDOWN.encode(ENCODING), -2):
             raise PuzzleFormatError("Data does not appear to represent a puzzle. Are you sure you didn't intend to use read?")
 
         self.preamble = s.data[:s.pos]
