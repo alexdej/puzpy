@@ -325,7 +325,7 @@ class PuzzleBuffer:
         return self.data[start:self.pos]
 
     def read_string(self):
-        return self.read_until('\0')
+        return self.read_until(b'\0')
 
     def read_until(self, c):
         start = self.pos
