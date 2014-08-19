@@ -100,8 +100,8 @@ class Puzzle:
         self.unk1 = '\0' * 2
         self.unk2 = '\0' * 12
         self.scrambled_cksum = 0
-        self.fill = ''
-        self.solution = ''
+        self.fill = b''
+        self.solution = b''
         self.clues = []
         self.notes = ''
         self.extensions = {}
@@ -237,12 +237,12 @@ class Puzzle:
 
     def unlock_solution(self, key):
         if self.is_solution_locked():
-            unscrambled = unscramble_solution(self.solution, self.width, self.height, key)
+            unscrambled = unscramble_solution(self.solution.decode(ENCODING), self.width, self.height, key)
             if not self.check_answers(unscrambled):
                 return False
 
             # clear the scrambled bit and cksum
-            self.solution = unscrambled
+            self.solution = unscrambled.encode(ENCODING)
             self.scrambled_cksum = 0
             self.solution_state = SolutionState.Unlocked
 
@@ -538,7 +538,8 @@ def unscramble_string(s, key):
     return s
 
 def scrambled_cksum(scrambled, width, height):
-    return data_cksum(square(scrambled, width, height).replace(BLACKSQUARE, ''))
+    data = square(scrambled, width, height).replace(BLACKSQUARE, '')
+    return data_cksum(data.encode(ENCODING))
 
 def key_digits(key):
     return [int(c) for c in str(key).zfill(4)]
