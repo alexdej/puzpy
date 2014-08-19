@@ -2,6 +2,16 @@
 import logging
 import string
 import operator
+import sys
+
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    str = str
+    range = range
+else:
+    str = unicode
+    range = xrange
 
 header_format = '''<
              H 11s        xH
@@ -123,7 +133,7 @@ class Puzzle:
         self.author = s.read_string()
         self.copyright = s.read_string()
 
-        self.clues = [s.read_string() for i in xrange(0, numclues)]
+        self.clues = [s.read_string() for i in range(0, numclues)]
         self.notes = s.read_string()
 
         ext_cksum = {}
@@ -330,7 +340,7 @@ class PuzzleBuffer:
     def read_until(self, c):
         start = self.pos
         self.seek_to(c, 1) # read past
-        return unicode(self.data[start:self.pos-1], ENCODING)
+        return str(self.data[start:self.pos-1], ENCODING)
 
     def seek(self, pos):
         self.pos = pos
@@ -384,7 +394,7 @@ class DefaultClueNumbering:
         d = []
         c = 0
         n = 1
-        for i in xrange(0, len(grid)):
+        for i in range(0, len(grid)):
             if not is_blacksquare(grid[i]):
                 lastc = c
                 if (self.col(i) == 0 or is_blacksquare(grid[i - 1])) and self.len_across(i) > 1:
@@ -408,13 +418,13 @@ class DefaultClueNumbering:
         return index / self.width
 
     def len_across(self, index):
-        for c in xrange(0, self.width - self.col(index)):
+        for c in range(0, self.width - self.col(index)):
             if is_blacksquare(self.grid[index + c]):
                 return c
         return c + 1
 
     def len_down(self, index):
-        for c in xrange(0, self.height - self.row(index)):
+        for c in range(0, self.height - self.row(index)):
             if is_blacksquare(self.grid[index + c*self.width]):
                 return c
         return c + 1
