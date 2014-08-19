@@ -547,7 +547,7 @@ def square(data, w, h):
     return ''.join([''.join([aa[r][c] for r in range(0, h)]) for c in range(0, w)])
 
 def shift(s, key):
-    atoz = string.uppercase
+    atoz = string.ascii_uppercase
     return ''.join(atoz[(atoz.index(c) + key[i % len(key)]) % len(atoz)] for i, c in enumerate(s))
 
 def unshift(s, key):
