@@ -572,7 +572,7 @@ def restore(s, t):
     'XYZ.ABC'
     """
     t = (c for c in t)
-    return ''.join(t.next() if not is_blacksquare(c) else c for c in s)
+    return ''.join(next(t) if not is_blacksquare(c) else c for c in s)
 
 def is_blacksquare(c):
     return c == BLACKSQUARE
