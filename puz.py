@@ -2,6 +2,7 @@
 import logging
 import string
 import operator
+import math
 import sys
 
 PY3 = sys.version_info[0] == 3
@@ -415,7 +416,7 @@ class DefaultClueNumbering:
         return index % self.width
 
     def row(self, index):
-        return index / self.width
+        return math.floor(index / self.width)
 
     def len_across(self, index):
         for c in range(0, self.width - self.col(index)):
