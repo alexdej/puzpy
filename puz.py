@@ -181,7 +181,7 @@ class Puzzle:
         s.write(self.preamble)
 
         s.pack(header_format,
-                self.global_cksum(), ACROSSDOWN, self.header_cksum(), self.magic_cksum(),
+                self.global_cksum(), ACROSSDOWN.encode(ENCODING), self.header_cksum(), self.magic_cksum(),
                 self.fileversion, self.unk1, self.scrambled_cksum,
                 self.unk2, self.width, self.height,
                 len(self.clues), self.puzzletype, self.solution_state)
@@ -213,7 +213,7 @@ class Puzzle:
             s.pack(extension_header_format, code, len(data), data_cksum(data))
             s.write(data + '\0')
 
-        s.write(self.postscript)
+        s.write(self.postscript.encode(ENCODING))
 
         return s.tostring()
 
@@ -238,7 +238,7 @@ class Puzzle:
     def unlock_solution(self, key):
         if self.is_solution_locked():
             unscrambled = unscramble_solution(self.solution.decode(ENCODING), self.width, self.height, key)
-            if not self.check_answers(unscrambled):
+            if not self.check_answers(unscrambled.encode(ENCODING)):
                 return False
 
             # clear the scrambled bit and cksum
@@ -251,13 +251,14 @@ class Puzzle:
     def lock_solution(self, key):
         if not self.is_solution_locked():
             # set the scrambled bit and cksum
-            self.scrambled_cksum = scrambled_cksum(self.solution, self.width, self.height)
+            self.scrambled_cksum = scrambled_cksum(self.solution.decode(ENCODING), self.width, self.height)
             self.solution_state = SolutionState.Locked
-            self.solution = scramble_solution(self.solution, self.width, self.height, key)
+            scrambled = scramble_solution(self.solution.decode(ENCODING), self.width, self.height, key)
+            self.solution = scrambled.encode(ENCODING)
 
     def check_answers(self, fill):
         if self.is_solution_locked():
-            return scrambled_cksum(fill, self.width, self.height) == self.scrambled_cksum
+            return scrambled_cksum(fill.decode(ENCODING), self.width, self.height) == self.scrambled_cksum
         else:
             return fill == self.solution
 
@@ -361,7 +362,7 @@ class PuzzleBuffer:
 
     def write_string(self, s):
         s = s or ''
-        self.data.append(s.encode(ENCODING) + '\0')
+        self.data.append(s.encode(ENCODING) + b'\0')
 
     def pack(self, format, *values):
         self.data.append(struct.pack(format, *values))
@@ -379,7 +380,7 @@ class PuzzleBuffer:
             raise PuzzleFormatError('could not unpack values at %d for format %s' % (start, format))
 
     def tostring(self):
-        return ''.join(self.data)
+        return b''.join(self.data)
 
 
 # clue numbering helper
