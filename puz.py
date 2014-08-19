@@ -1,6 +1,7 @@
 ﻿import struct
 import logging
 import string
+import functools
 import operator
 import math
 import sys
@@ -554,8 +555,9 @@ def unshift(s, key):
     return shift(s, [-k for k in key])
 
 def shuffle(s):
-    mid = len(s) / 2
-    return ''.join(reduce(operator.add, zip(s[mid:], s[:mid]))) + (s[-1] if len(s) % 2 else '')
+    mid = math.floor(len(s) / 2)
+    items = functools.reduce(operator.add, zip(s[mid:], s[:mid]))
+    return ''.join(items) + (s[-1] if len(s) % 2 else '')
 
 def unshuffle(s):
     return s[1::2] + s[::2]
