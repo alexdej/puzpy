@@ -268,19 +268,19 @@ class Puzzle:
         # null termination, followed by all non-empty clues without null
         # termination, followed by notes (but only for version 1.3)
         if self.title:
-            cksum = data_cksum(self.title + '\0', cksum)
+            cksum = data_cksum(self.title.encode(ENCODING) + b'\0', cksum)
         if self.author:
-            cksum = data_cksum(self.author + '\0', cksum)
+            cksum = data_cksum(self.author.encode(ENCODING) + b'\0', cksum)
         if self.copyright:
-            cksum = data_cksum(self.copyright + '\0', cksum)
+            cksum = data_cksum(self.copyright.encode(ENCODING) + b'\0', cksum)
 
         for clue in self.clues:
             if clue:
-                cksum = data_cksum(clue, cksum)
+                cksum = data_cksum(clue.encode(ENCODING), cksum)
 
         # notes included in global cksum only in v1.3 of format
         if self.version == '1.3' and self.notes:
-            cksum = data_cksum(self.notes + '\0', cksum)
+            cksum = data_cksum(self.notes.encode(ENCODING) + b'\0', cksum)
 
         return cksum
 
@@ -484,8 +484,7 @@ class Markup:
 
 # helper functions for cksums and scrambling
 def data_cksum(data, cksum=0):
-    for c in data:
-        b = ord(c)
+    for b in data:
         # right-shift one with wrap-around
         lowbit = (cksum & 0x0001)
         cksum = (cksum >> 1)
