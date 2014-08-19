@@ -14,6 +14,8 @@ maskstring = 'ICHEATED'
 ACROSSDOWN = 'ACROSS&DOWN'
 BLACKSQUARE = '.'
 
+ENCODING = 'ISO-8859-1'
+
 extension_header_format = '< 4s  H H '
 
 def enum(**enums):
@@ -302,9 +304,8 @@ class PuzzleBuffer:
     wraps a data buffer ('' or []) and provides .puz-specific methods for
     reading and writing data
     """
-    def __init__(self, data=None, enc='ISO-8859-1'):
+    def __init__(self, data=None):
         self.data = data or []
-        self.enc = enc
         self.pos = 0
 
     def can_read(self, bytes=1):
@@ -329,7 +330,7 @@ class PuzzleBuffer:
     def read_until(self, c):
         start = self.pos
         self.seek_to(c, 1) # read past
-        return unicode(self.data[start:self.pos-1], self.enc)
+        return unicode(self.data[start:self.pos-1], ENCODING)
 
     def seek(self, pos):
         self.pos = pos
@@ -348,7 +349,7 @@ class PuzzleBuffer:
 
     def write_string(self, s):
         s = s or ''
-        self.data.append(s.encode(self.enc) + '\0')
+        self.data.append(s.encode(ENCODING) + '\0')
 
     def pack(self, format, *values):
         self.data.append(struct.pack(format, *values))
