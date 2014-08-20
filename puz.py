@@ -561,7 +561,7 @@ def unshift(s, key):
     return shift(s, [-k for k in key])
 
 def shuffle(s):
-    mid = math.floor(len(s) / 2)
+    mid = int(math.floor(len(s) / 2))
     items = functools.reduce(operator.add, zip(s[mid:], s[:mid]))
     return ''.join(items) + (s[-1] if len(s) % 2 else '')
 
