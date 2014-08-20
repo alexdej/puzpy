@@ -398,13 +398,13 @@ class DefaultClueNumbering:
         c = 0
         n = 1
         for i in range(0, len(grid)):
-            if not is_blacksquare(chr(grid[i])):
+            if not is_blacksquare(grid[i]):
                 lastc = c
-                if (self.col(i) == 0 or is_blacksquare(chr(grid[i - 1]))) and self.len_across(i) > 1:
+                if (self.col(i) == 0 or is_blacksquare(grid[i - 1])) and self.len_across(i) > 1:
                     clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_across(i) }
                     a.append(clue)
                     c += 1
-                if (self.row(i) == 0 or is_blacksquare(chr(grid[i - width]))) and self.len_down(i) > 1:
+                if (self.row(i) == 0 or is_blacksquare(grid[i - width])) and self.len_down(i) > 1:
                     clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_down(i) }
                     d.append(clue)
                     c += 1
@@ -422,13 +422,13 @@ class DefaultClueNumbering:
 
     def len_across(self, index):
         for c in range(0, self.width - self.col(index)):
-            if is_blacksquare(chr(self.grid[index + c])):
+            if is_blacksquare(self.grid[index + c]):
                 return c
         return c + 1
 
     def len_down(self, index):
         for c in range(0, self.height - self.row(index)):
-            if is_blacksquare(chr(self.grid[index + c*self.width])):
+            if is_blacksquare(self.grid[index + c*self.width]):
                 return c
         return c + 1
 
@@ -579,6 +579,8 @@ def restore(s, t):
     return ''.join(next(t) if not is_blacksquare(c) else c for c in s)
 
 def is_blacksquare(c):
+    if isinstance(c, int):
+        c = chr(c)
     return c == BLACKSQUARE
 
 #
