@@ -463,7 +463,7 @@ class Rebus:
     def save(self):
         if self.has_rebus():
             # commit changes back to puzzle.extensions
-            self.puzzle.extensions[Extensions.Rebus] = bytes_to_string(self.table)
+            self.puzzle.extensions[Extensions.Rebus] = pack_bytes(self.table)
             self.puzzle.extensions[Extensions.RebusSolutions] = dict_to_string(self.solutions).encode(ENCODING)
             self.puzzle.extensions[Extensions.RebusFill] = dict_to_string(self.fill).encode(ENCODING)
 
@@ -484,7 +484,7 @@ class Markup:
 
     def save(self):
         if self.has_markup():
-            self.puzzle.extensions[Extensions.Markup] = bytes_to_string(self.markup)
+            self.puzzle.extensions[Extensions.Markup] = pack_bytes(self.markup)
 
 # helper functions for cksums and scrambling
 def data_cksum(data, cksum=0):
@@ -591,7 +591,7 @@ def is_blacksquare(c):
 def parse_bytes(s):
     return list(struct.unpack('B' * len(s), s))
 
-def bytes_to_string(a):
+def pack_bytes(a):
     return struct.pack('B' * len(a), *a)
 
 # dict string format is k1:v1;k2:v2;...;kn:vn;
