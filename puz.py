@@ -282,7 +282,7 @@ class Puzzle:
                 cksum = data_cksum(clue.encode(ENCODING), cksum)
 
         # notes included in global cksum only in v1.3 of format
-        if self.version == '1.3' and self.notes:
+        if self.version.decode(ENCODING) == '1.3' and self.notes:
             cksum = data_cksum(self.notes.encode(ENCODING) + b'\0', cksum)
 
         return cksum
