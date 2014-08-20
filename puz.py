@@ -99,8 +99,8 @@ class Puzzle:
         self.unk1 = '\0' * 2
         self.unk2 = '\0' * 12
         self.scrambled_cksum = 0
-        self.fill = b''
-        self.solution = b''
+        self.fill = ''
+        self.solution = ''
         self.clues = []
         self.notes = ''
         self.extensions = {}
