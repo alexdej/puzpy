@@ -26,7 +26,7 @@ class PuzzleTests(unittest.TestCase):
         self.assertTrue(all('STAR' == r.get_rebus_solution(i) for i in r.get_rebus_squares()))
         self.assertTrue(None == r.get_rebus_solution(100))
         # trigger save
-        p.tostring()
+        p.tobytes()
 
     def testMarkup(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
@@ -34,14 +34,14 @@ class PuzzleTests(unittest.TestCase):
         m = p.markup()
         self.assertTrue(all(puz.GridMarkup.Circled == m.markup[i] for i in m.get_markup_squares()))
         # trigger save
-        p.tostring()
+        p.tobytes()
 
         p = puz.read('testfiles/washpost.puz')
         self.assertFalse(p.has_markup())
         m = p.markup()
         self.assertFalse(m.has_markup())
         # trigger save
-        p.tostring()
+        p.tobytes()
 
     def testPuzzleType(self):
         self.assertFalse(puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Diagramless)
@@ -82,7 +82,7 @@ class LockTests(unittest.TestCase):
         self.assertTrue(p.is_solution_locked())
         self.assertTrue(p.unlock_solution(7844))
         p.lock_solution(7844)
-        new = p.tostring()
+        new = p.tobytes()
         self.assertEqual(orig, new, 'nyt_locked.puz dit not found-trip')
 
     def testCheckAnswersLocked(self):
@@ -108,7 +108,7 @@ class RoundtripPuzfileTests(unittest.TestCase):
                 # smoke test the clue numbering while we're at it
                 self.assertEqual(len(p.clues), len(clues.across) + len(clues.down), 'failed in %s' % self.filename)
             # this is the roundtrip
-            new = p.tostring()
+            new = p.tobytes()
             self.assertEqual(orig, new, '%s did not round-trip' % self.filename)
         except puz.PuzzleFormatError:
             self.assertTrue(False, '%s threw PuzzleFormatError: %s' % (self.filename, sys.exc_info()[1].message))

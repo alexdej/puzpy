@@ -165,11 +165,11 @@ class Puzzle:
     def save(self, filename):
         f = open(filename, 'wb')
         try:
-            f.write(self.tostring())
+            f.write(self.tobytes())
         finally:
             f.close()
 
-    def tostring(self):
+    def tobytes(self):
         s = PuzzleBuffer()
         # commit any changes from helpers
         for h in self.helpers.values():
@@ -214,7 +214,7 @@ class Puzzle:
 
         s.write(self.postscript.encode(ENCODING))
 
-        return s.tostring()
+        return s.tobytes()
 
     def has_rebus(self):
         return self.rebus().has_rebus()
@@ -378,7 +378,7 @@ class PuzzleBuffer:
         except struct.error:
             raise PuzzleFormatError('could not unpack values at %d for format %s' % (start, format))
 
-    def tostring(self):
+    def tobytes(self):
         return b''.join(self.data)
 
 
