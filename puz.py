@@ -14,20 +14,24 @@ else:
     str = unicode
     range = xrange
 
-header_format = '''<
+HEADER_FORMAT = '''<
              H 11s        xH
              Q       4s  2sH
              12s         BBH
              H H '''
 
-header_cksum_format = '<BBH H H '
-maskstring = 'ICHEATED'
-ACROSSDOWN = 'ACROSS&DOWN'
-BLACKSQUARE = '.'
+HEADER_CKSUM_FORMAT = '<BBH H H '
+
+EXTENSION_HEADER_FORMAT = '< 4s  H H '
+
+MASKSTRING = 'ICHEATED'
 
 ENCODING = 'ISO-8859-1'
 
-extension_header_format = '< 4s  H H '
+ACROSSDOWN = 'ACROSS&DOWN'
+
+BLACKSQUARE = '.'
+
 
 def enum(**enums):
     return type('Enum', (), enums)
@@ -124,7 +128,7 @@ class Puzzle:
          self.fileversion, self.unk1, # since we don't know the role of these bytes, just round-trip them
          self.scrambled_cksum, self.unk2,
          self.width, self.height, numclues, self.puzzletype, self.solution_state
-        ) = s.unpack(header_format)
+        ) = s.unpack(HEADER_FORMAT)
 
         self.version = self.fileversion[:3]
         self.solution = s.read(self.width * self.height).decode(ENCODING)
@@ -138,8 +142,8 @@ class Puzzle:
         self.notes = s.read_string()
 
         ext_cksum = {}
-        while s.can_unpack(extension_header_format):
-            code, length, cksum = s.unpack(extension_header_format)
+        while s.can_unpack(EXTENSION_HEADER_FORMAT):
+            code, length, cksum = s.unpack(EXTENSION_HEADER_FORMAT)
             ext_cksum[code] = cksum
             # extension data is represented as a null-terminated string, but since the data can contain nulls
             # we can't use read_string
@@ -179,7 +183,7 @@ class Puzzle:
         # include any preamble text we might have found on read
         s.write(self.preamble)
 
-        s.pack(header_format,
+        s.pack(HEADER_FORMAT,
                 self.global_cksum(), ACROSSDOWN.encode(ENCODING), self.header_cksum(), self.magic_cksum(),
                 self.fileversion, self.unk1, self.scrambled_cksum,
                 self.unk2, self.width, self.height,
@@ -205,11 +209,11 @@ class Puzzle:
         for code in self._extensions_order:
             data = ext.pop(code, None)
             if data:
-                s.pack(extension_header_format, code, len(data), data_cksum(data))
+                s.pack(EXTENSION_HEADER_FORMAT, code, len(data), data_cksum(data))
                 s.write(data + b'\0')
 
         for code, data in ext.items():
-            s.pack(extension_header_format, code, len(data), data_cksum(data))
+            s.pack(EXTENSION_HEADER_FORMAT, code, len(data), data_cksum(data))
             s.write(data + b'\0')
 
         s.write(self.postscript.encode(ENCODING))
@@ -262,7 +266,7 @@ class Puzzle:
             return fill == self.solution
 
     def header_cksum(self, cksum=0):
-        return data_cksum(struct.pack(header_cksum_format,
+        return data_cksum(struct.pack(HEADER_CKSUM_FORMAT,
             self.width, self.height, len(self.clues), self.puzzletype, self.solution_state), cksum)
 
     def text_cksum(self, cksum=0):
@@ -305,8 +309,8 @@ class Puzzle:
         cksum_magic = 0
         for (i, cksum) in enumerate(reversed(cksums)):
             cksum_magic <<= 8
-            cksum_magic |= (ord(maskstring[len(cksums) - i - 1]) ^ (cksum & 0x00ff))
-            cksum_magic |= (ord(maskstring[len(cksums) - i - 1 + 4]) ^ (cksum >> 8)) << 32
+            cksum_magic |= (ord(MASKSTRING[len(cksums) - i - 1]) ^ (cksum & 0x00ff))
+            cksum_magic |= (ord(MASKSTRING[len(cksums) - i - 1 + 4]) ^ (cksum >> 8)) << 32
 
         return cksum_magic
 
