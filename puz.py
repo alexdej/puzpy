@@ -127,8 +127,8 @@ class Puzzle:
         ) = s.unpack(header_format)
 
         self.version = self.fileversion[:3]
-        self.solution = s.read(self.width * self.height)
-        self.fill = s.read(self.width * self.height)
+        self.solution = s.read(self.width * self.height).decode(ENCODING)
+        self.fill = s.read(self.width * self.height).decode(ENCODING)
 
         self.title = s.read_string()
         self.author = s.read_string()
@@ -185,8 +185,8 @@ class Puzzle:
                 self.unk2, self.width, self.height,
                 len(self.clues), self.puzzletype, self.solution_state)
 
-        s.write(self.solution)
-        s.write(self.fill)
+        s.write(self.solution.encode(ENCODING))
+        s.write(self.fill.encode(ENCODING))
 
         s.write_string(self.title)
         s.write_string(self.author)
@@ -236,12 +236,12 @@ class Puzzle:
 
     def unlock_solution(self, key):
         if self.is_solution_locked():
-            unscrambled = unscramble_solution(self.solution.decode(ENCODING), self.width, self.height, key)
-            if not self.check_answers(unscrambled.encode(ENCODING)):
+            unscrambled = unscramble_solution(self.solution, self.width, self.height, key)
+            if not self.check_answers(unscrambled):
                 return False
 
             # clear the scrambled bit and cksum
-            self.solution = unscrambled.encode(ENCODING)
+            self.solution = unscrambled
             self.scrambled_cksum = 0
             self.solution_state = SolutionState.Unlocked
 
@@ -250,14 +250,14 @@ class Puzzle:
     def lock_solution(self, key):
         if not self.is_solution_locked():
             # set the scrambled bit and cksum
-            self.scrambled_cksum = scrambled_cksum(self.solution.decode(ENCODING), self.width, self.height)
+            self.scrambled_cksum = scrambled_cksum(self.solution, self.width, self.height)
             self.solution_state = SolutionState.Locked
-            scrambled = scramble_solution(self.solution.decode(ENCODING), self.width, self.height, key)
-            self.solution = scrambled.encode(ENCODING)
+            scrambled = scramble_solution(self.solution, self.width, self.height, key)
+            self.solution = scrambled
 
     def check_answers(self, fill):
         if self.is_solution_locked():
-            return scrambled_cksum(fill.decode(ENCODING), self.width, self.height) == self.scrambled_cksum
+            return scrambled_cksum(fill, self.width, self.height) == self.scrambled_cksum
         else:
             return fill == self.solution
 
@@ -288,8 +288,8 @@ class Puzzle:
 
     def global_cksum(self):
         cksum = self.header_cksum()
-        cksum = data_cksum(self.solution, cksum)
-        cksum = data_cksum(self.fill, cksum)
+        cksum = data_cksum(self.solution.encode(ENCODING), cksum)
+        cksum = data_cksum(self.fill.encode(ENCODING), cksum)
         cksum = self.text_cksum(cksum)
         # extensions do not seem to be included in global cksum
         return cksum
@@ -297,8 +297,8 @@ class Puzzle:
     def magic_cksum(self):
         cksums = [
             self.header_cksum(),
-            data_cksum(self.solution),
-            data_cksum(self.fill),
+            data_cksum(self.solution.encode(ENCODING)),
+            data_cksum(self.fill.encode(ENCODING)),
             self.text_cksum()
         ]
 

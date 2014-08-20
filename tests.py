@@ -73,7 +73,7 @@ class LockTests(unittest.TestCase):
         self.assertTrue(p.is_solution_locked()) # still locked
         self.assertTrue(p.unlock_solution(7844))
         self.assertFalse(p.is_solution_locked()) # unlocked!
-        self.assertTrue('LAKEONTARIO' in p.solution.decode(puz.ENCODING))
+        self.assertTrue('LAKEONTARIO' in p.solution)
 
     def testUnlockRelock(self):
         with open('testfiles/nyt_locked.puz', 'rb') as fp:
