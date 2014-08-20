@@ -490,6 +490,8 @@ class Markup:
 # helper functions for cksums and scrambling
 def data_cksum(data, cksum=0):
     for b in data:
+        if isinstance(b, bytes):
+            b = ord(b)
         # right-shift one with wrap-around
         lowbit = (cksum & 0x0001)
         cksum = (cksum >> 1)
