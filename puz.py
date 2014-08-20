@@ -1,9 +1,8 @@
-﻿import struct
-import logging
-import string
-import functools
+﻿import functools
 import operator
 import math
+import string
+import struct
 import sys
 
 PY3 = sys.version_info[0] == 3
