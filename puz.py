@@ -465,8 +465,8 @@ class Rebus:
         if self.has_rebus():
             # commit changes back to puzzle.extensions
             self.puzzle.extensions[Extensions.Rebus] = bytes_to_string(self.table)
-            self.puzzle.extensions[Extensions.RebusSolutions] = dict_to_string(self.solutions)
-            self.puzzle.extensions[Extensions.RebusFill] = dict_to_string(self.fill)
+            self.puzzle.extensions[Extensions.RebusSolutions] = dict_to_string(self.solutions).encode(ENCODING)
+            self.puzzle.extensions[Extensions.RebusFill] = dict_to_string(self.fill).encode(ENCODING)
 
 class Markup:
     def __init__(self, puzzle):
