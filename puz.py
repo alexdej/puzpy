@@ -47,11 +47,11 @@ GridMarkup = enum(Default=0x00,              # ordinary grid cell
                   Circled=0x80)              # circled
 
 # refer to Extensions as Extensions.Rebus, Extensions.Markup
-Extensions = enum(Rebus='GRBS',             # grid of rebus indices: 0 for non-rebus; i+1 for key i into RebusSolutions map
-                  RebusSolutions='RTBL',    # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
-                  RebusFill='RUSR',         # user's rebus entries
-                  Timer='LTIM',             # timer state: 'a,b' where a is the number of seconds elapsed and b is a boolean (0,1) for whether the timer is running
-                  Markup='GEXT')            # grid cell markup: previously incorrect: 0x10; currently incorrect: 0x20, hinted: 0x40, circled: 0x80
+Extensions = enum(Rebus=b'GRBS',             # grid of rebus indices: 0 for non-rebus; i+1 for key i into RebusSolutions map
+                  RebusSolutions=b'RTBL',    # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
+                  RebusFill=b'RUSR',         # user's rebus entries
+                  Timer=b'LTIM',             # timer state: 'a,b' where a is the number of seconds elapsed and b is a boolean (0,1) for whether the timer is running
+                  Markup=b'GEXT')            # grid cell markup: previously incorrect: 0x10; currently incorrect: 0x20, hinted: 0x40, circled: 0x80
 
 def read(filename):
     """Read a .puz file and return the Puzzle object
@@ -436,10 +436,11 @@ class Rebus:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse rebus data
-        data = self.puzzle.extensions.get(Extensions.Rebus, '')
-        self.table = parse_bytes(data.encode(ENCODING))
-        self.solutions = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(self.puzzle.extensions.get(Extensions.RebusSolutions, '')).items()))
-        self.fill = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(self.puzzle.extensions.get(Extensions.RebusFill, '')).items()))
+        self.table = parse_bytes(self.puzzle.extensions.get(Extensions.Rebus, b''))
+        solutions_str = self.puzzle.extensions.get(Extensions.RebusSolutions, b'').decode(ENCODING)
+        fill_str = self.puzzle.extensions.get(Extensions.RebusFill, b'').decode(ENCODING)
+        self.solutions = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(solutions_str).items()))
+        self.fill = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(fill_str).items()))
 
     def has_rebus(self):
         return Extensions.Rebus in self.puzzle.extensions
@@ -471,8 +472,7 @@ class Markup:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse markup data
-        data = self.puzzle.extensions.get(Extensions.Markup, '')
-        self.markup = parse_bytes(data.encode(ENCODING))
+        self.markup = parse_bytes(self.puzzle.extensions.get(Extensions.Markup, b''))
 
     def has_markup(self):
         return any(bool(b) for b in self.markup)
