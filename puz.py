@@ -418,7 +418,7 @@ class DefaultClueNumbering:
         return index % self.width
 
     def row(self, index):
-        return math.floor(index / self.width)
+        return int(math.floor(index / self.width))
 
     def len_across(self, index):
         for c in range(0, self.width - self.col(index)):
