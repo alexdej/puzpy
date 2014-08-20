@@ -436,7 +436,8 @@ class Rebus:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse rebus data
-        self.table = parse_bytes(self.puzzle.extensions.get(Extensions.Rebus, ''))
+        data = self.puzzle.extensions.get(Extensions.Rebus, '')
+        self.table = parse_bytes(data.encode(ENCODING))
         self.solutions = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(self.puzzle.extensions.get(Extensions.RebusSolutions, '')).items()))
         self.fill = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(self.puzzle.extensions.get(Extensions.RebusFill, '')).items()))
 
@@ -470,7 +471,8 @@ class Markup:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse markup data
-        self.markup = parse_bytes(self.puzzle.extensions.get(Extensions.Markup, ''))
+        data = self.puzzle.extensions.get(Extensions.Markup, '')
+        self.markup = parse_bytes(data.encode(ENCODING))
 
     def has_markup(self):
         return any(bool(b) for b in self.markup)
