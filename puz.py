@@ -207,11 +207,11 @@ class Puzzle:
             data = ext.pop(code, None)
             if data:
                 s.pack(extension_header_format, code, len(data), data_cksum(data))
-                s.write(data + '\0')
+                s.write(data + b'\0')
 
         for code, data in ext.items():
             s.pack(extension_header_format, code, len(data), data_cksum(data))
-            s.write(data + '\0')
+            s.write(data + b'\0')
 
         s.write(self.postscript.encode(ENCODING))
 
