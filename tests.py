@@ -9,7 +9,7 @@ class PuzzleTests(unittest.TestCase):
         p = puz.read('testfiles/washpost.puz')
         clues = p.clue_numbering()
         self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
-    
+
     def testExtensions(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
         self.assertTrue(puz.Extensions.Rebus in p.extensions)
@@ -26,7 +26,7 @@ class PuzzleTests(unittest.TestCase):
         self.assertTrue(all('STAR' == r.get_rebus_solution(i) for i in r.get_rebus_squares()))
         self.assertTrue(None == r.get_rebus_solution(100))
         # trigger save
-        p.tostring()
+        p.tobytes()
 
     def testMarkup(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
@@ -34,20 +34,20 @@ class PuzzleTests(unittest.TestCase):
         m = p.markup()
         self.assertTrue(all(puz.GridMarkup.Circled == m.markup[i] for i in m.get_markup_squares()))
         # trigger save
-        p.tostring()
-        
+        p.tobytes()
+
         p = puz.read('testfiles/washpost.puz')
         self.assertFalse(p.has_markup())
         m = p.markup()
         self.assertFalse(m.has_markup())
         # trigger save
-        p.tostring()
+        p.tobytes()
 
     def testPuzzleType(self):
         self.assertFalse(puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Diagramless)
         self.assertFalse(puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Diagramless)
         self.assertTrue(puz.read('testfiles/nyt_diagramless.puz').puzzletype == puz.PuzzleType.Diagramless)
-                
+
 class LockTests(unittest.TestCase):
     def testScrambleFunctions(self):
         ''' tests some examples from the file format documentation wiki
@@ -57,11 +57,11 @@ class LockTests(unittest.TestCase):
 
         self.assertEqual('AEBFCDG', puz.unscramble_string('MLOOPKJ', 1234))
         self.assertEqual('ABC..DEFG', puz.unscramble_solution('MOP..KLOJ', 3, 3, 1234))
-        
+
         # rectangular example - tricky
         a = 'ABCD.EFGH.KHIJKLM.NOPW.XYZ'
         self.assertEqual(a, puz.unscramble_solution(puz.scramble_solution(a, 13, 2, 9721), 13, 2, 9721))
-        
+
     def testLockedBit(self):
         self.assertFalse(puz.read('testfiles/washpost.puz').is_solution_locked())
         self.assertTrue(puz.read('testfiles/nyt_locked.puz').is_solution_locked())
@@ -76,14 +76,15 @@ class LockTests(unittest.TestCase):
         self.assertTrue('LAKEONTARIO' in p.solution)
 
     def testUnlockRelock(self):
-        orig = file('testfiles/nyt_locked.puz', 'rb').read()
+        with open('testfiles/nyt_locked.puz', 'rb') as fp:
+            orig = fp.read()
         p = puz.read('testfiles/nyt_locked.puz')
         self.assertTrue(p.is_solution_locked())
         self.assertTrue(p.unlock_solution(7844))
         p.lock_solution(7844)
-        new = p.tostring()
+        new = p.tobytes()
         self.assertEqual(orig, new, 'nyt_locked.puz dit not found-trip')
-        
+
     def testCheckAnswersLocked(self):
         '''Verify that we can check answers even when the solution is locked
         '''
@@ -97,23 +98,23 @@ class RoundtripPuzfileTests(unittest.TestCase):
     def __init__(self, filename):
         unittest.TestCase.__init__(self)
         self.filename = filename
-        
+
     def runTest(self):
         try:
-            orig = file(self.filename, 'rb').read()
+            orig = open(self.filename, 'rb').read()
             p = puz.read(self.filename)
             if (p.puzzletype == puz.PuzzleType.Normal):
                 clues = p.clue_numbering()
                 # smoke test the clue numbering while we're at it
                 self.assertEqual(len(p.clues), len(clues.across) + len(clues.down), 'failed in %s' % self.filename)
             # this is the roundtrip
-            new = p.tostring()
+            new = p.tobytes()
             self.assertEqual(orig, new, '%s did not round-trip' % self.filename)
         except puz.PuzzleFormatError:
             self.assertTrue(False, '%s threw PuzzleFormatError: %s' % (self.filename, sys.exc_info()[1].message))
-    
+
 def tests_in_dir(dir):
-    return sum((map(RoundtripPuzfileTests, glob.glob(os.path.join(path, '*.puz')))
+    return sum((list(map(RoundtripPuzfileTests, glob.glob(os.path.join(path, '*.puz'))))
                 for path, dirs, files in os.walk(dir)), [])
 
 def suite():
@@ -128,5 +129,5 @@ def suite():
     return suite
 
 if __name__ == '__main__':
-  print __file__
+  print(__file__)
   unittest.TextTestRunner().run(suite())

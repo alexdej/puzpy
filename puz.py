@@ -1,20 +1,37 @@
-﻿import struct
-import logging
-import string
+﻿import functools
 import operator
+import math
+import string
+import struct
+import sys
 
-header_format = '''<
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    str = str
+    range = range
+else:
+    str = unicode
+    range = xrange
+
+HEADER_FORMAT = '''<
              H 11s        xH
              Q       4s  2sH
              12s         BBH
              H H '''
 
-header_cksum_format = '<BBH H H '
-maskstring = 'ICHEATED'
+HEADER_CKSUM_FORMAT = '<BBH H H '
+
+EXTENSION_HEADER_FORMAT = '< 4s  H H '
+
+MASKSTRING = 'ICHEATED'
+
+ENCODING = 'ISO-8859-1'
+
 ACROSSDOWN = 'ACROSS&DOWN'
+
 BLACKSQUARE = '.'
 
-extension_header_format = '< 4s  H H '
 
 def enum(**enums):
     return type('Enum', (), enums)
@@ -33,11 +50,11 @@ GridMarkup = enum(Default=0x00,              # ordinary grid cell
                   Circled=0x80)              # circled
 
 # refer to Extensions as Extensions.Rebus, Extensions.Markup
-Extensions = enum(Rebus='GRBS',             # grid of rebus indices: 0 for non-rebus; i+1 for key i into RebusSolutions map
-                  RebusSolutions='RTBL',    # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
-                  RebusFill='RUSR',         # user's rebus entries
-                  Timer='LTIM',             # timer state: 'a,b' where a is the number of seconds elapsed and b is a boolean (0,1) for whether the timer is running
-                  Markup='GEXT')            # grid cell markup: previously incorrect: 0x10; currently incorrect: 0x20, hinted: 0x40, circled: 0x80
+Extensions = enum(Rebus=b'GRBS',             # grid of rebus indices: 0 for non-rebus; i+1 for key i into RebusSolutions map
+                  RebusSolutions=b'RTBL',    # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
+                  RebusFill=b'RUSR',         # user's rebus entries
+                  Timer=b'LTIM',             # timer state: 'a,b' where a is the number of seconds elapsed and b is a boolean (0,1) for whether the timer is running
+                  Markup=b'GEXT')            # grid cell markup: previously incorrect: 0x10; currently incorrect: 0x20, hinted: 0x40, circled: 0x80
 
 def read(filename):
     """Read a .puz file and return the Puzzle object
@@ -60,7 +77,7 @@ def load(data):
     return puz
 
 
-class PuzzleFormatError:
+class PuzzleFormatError(Exception):
     """Indicates a format error in the .puz file
     May be thrown due to invalid headers, invalid checksum validation, or other format issues
     """
@@ -102,7 +119,7 @@ class Puzzle:
         # advance to start - files may contain some data before the start of the puzzle
         # use the ACROSS&DOWN magic string as a waypoint
         # save the preamble for round-tripping
-        if not s.seek_to(ACROSSDOWN, -2):
+        if not s.seek_to(ACROSSDOWN.encode(ENCODING), -2):
             raise PuzzleFormatError("Data does not appear to represent a puzzle. Are you sure you didn't intend to use read?")
 
         self.preamble = s.data[:s.pos]
@@ -111,22 +128,22 @@ class Puzzle:
          self.fileversion, self.unk1, # since we don't know the role of these bytes, just round-trip them
          self.scrambled_cksum, self.unk2,
          self.width, self.height, numclues, self.puzzletype, self.solution_state
-        ) = s.unpack(header_format)
+        ) = s.unpack(HEADER_FORMAT)
 
         self.version = self.fileversion[:3]
-        self.solution = s.read(self.width * self.height)
-        self.fill = s.read(self.width * self.height)
+        self.solution = s.read(self.width * self.height).decode(ENCODING)
+        self.fill = s.read(self.width * self.height).decode(ENCODING)
 
         self.title = s.read_string()
         self.author = s.read_string()
         self.copyright = s.read_string()
 
-        self.clues = [s.read_string() for i in xrange(0, numclues)]
+        self.clues = [s.read_string() for i in range(0, numclues)]
         self.notes = s.read_string()
 
         ext_cksum = {}
-        while s.can_unpack(extension_header_format):
-            code, length, cksum = s.unpack(extension_header_format)
+        while s.can_unpack(EXTENSION_HEADER_FORMAT):
+            code, length, cksum = s.unpack(EXTENSION_HEADER_FORMAT)
             ext_cksum[code] = cksum
             # extension data is represented as a null-terminated string, but since the data can contain nulls
             # we can't use read_string
@@ -152,11 +169,11 @@ class Puzzle:
     def save(self, filename):
         f = open(filename, 'wb')
         try:
-            f.write(self.tostring())
+            f.write(self.tobytes())
         finally:
             f.close()
 
-    def tostring(self):
+    def tobytes(self):
         s = PuzzleBuffer()
         # commit any changes from helpers
         for h in self.helpers.values():
@@ -166,14 +183,14 @@ class Puzzle:
         # include any preamble text we might have found on read
         s.write(self.preamble)
 
-        s.pack(header_format,
-                self.global_cksum(), ACROSSDOWN, self.header_cksum(), self.magic_cksum(),
+        s.pack(HEADER_FORMAT,
+                self.global_cksum(), ACROSSDOWN.encode(ENCODING), self.header_cksum(), self.magic_cksum(),
                 self.fileversion, self.unk1, self.scrambled_cksum,
                 self.unk2, self.width, self.height,
                 len(self.clues), self.puzzletype, self.solution_state)
 
-        s.write(self.solution)
-        s.write(self.fill)
+        s.write(self.solution.encode(ENCODING))
+        s.write(self.fill.encode(ENCODING))
 
         s.write_string(self.title)
         s.write_string(self.author)
@@ -192,16 +209,16 @@ class Puzzle:
         for code in self._extensions_order:
             data = ext.pop(code, None)
             if data:
-                s.pack(extension_header_format, code, len(data), data_cksum(data))
-                s.write(data + '\0')
+                s.pack(EXTENSION_HEADER_FORMAT, code, len(data), data_cksum(data))
+                s.write(data + b'\0')
 
         for code, data in ext.items():
-            s.pack(extension_header_format, code, len(data), data_cksum(data))
-            s.write(data + '\0')
+            s.pack(EXTENSION_HEADER_FORMAT, code, len(data), data_cksum(data))
+            s.write(data + b'\0')
 
-        s.write(self.postscript)
+        s.write(self.postscript.encode(ENCODING))
 
-        return s.tostring()
+        return s.tobytes()
 
     def has_rebus(self):
         return self.rebus().has_rebus()
@@ -239,7 +256,8 @@ class Puzzle:
             # set the scrambled bit and cksum
             self.scrambled_cksum = scrambled_cksum(self.solution, self.width, self.height)
             self.solution_state = SolutionState.Locked
-            self.solution = scramble_solution(self.solution, self.width, self.height, key)
+            scrambled = scramble_solution(self.solution, self.width, self.height, key)
+            self.solution = scrambled
 
     def check_answers(self, fill):
         if self.is_solution_locked():
@@ -248,7 +266,7 @@ class Puzzle:
             return fill == self.solution
 
     def header_cksum(self, cksum=0):
-        return data_cksum(struct.pack(header_cksum_format,
+        return data_cksum(struct.pack(HEADER_CKSUM_FORMAT,
             self.width, self.height, len(self.clues), self.puzzletype, self.solution_state), cksum)
 
     def text_cksum(self, cksum=0):
@@ -256,26 +274,26 @@ class Puzzle:
         # null termination, followed by all non-empty clues without null
         # termination, followed by notes (but only for version 1.3)
         if self.title:
-            cksum = data_cksum(self.title + '\0', cksum)
+            cksum = data_cksum(self.title.encode(ENCODING) + b'\0', cksum)
         if self.author:
-            cksum = data_cksum(self.author + '\0', cksum)
+            cksum = data_cksum(self.author.encode(ENCODING) + b'\0', cksum)
         if self.copyright:
-            cksum = data_cksum(self.copyright + '\0', cksum)
+            cksum = data_cksum(self.copyright.encode(ENCODING) + b'\0', cksum)
 
         for clue in self.clues:
             if clue:
-                cksum = data_cksum(clue, cksum)
+                cksum = data_cksum(clue.encode(ENCODING), cksum)
 
         # notes included in global cksum only in v1.3 of format
-        if self.version == '1.3' and self.notes:
-            cksum = data_cksum(self.notes + '\0', cksum)
+        if self.version.decode(ENCODING) == '1.3' and self.notes:
+            cksum = data_cksum(self.notes.encode(ENCODING) + b'\0', cksum)
 
         return cksum
 
     def global_cksum(self):
         cksum = self.header_cksum()
-        cksum = data_cksum(self.solution, cksum)
-        cksum = data_cksum(self.fill, cksum)
+        cksum = data_cksum(self.solution.encode(ENCODING), cksum)
+        cksum = data_cksum(self.fill.encode(ENCODING), cksum)
         cksum = self.text_cksum(cksum)
         # extensions do not seem to be included in global cksum
         return cksum
@@ -283,16 +301,16 @@ class Puzzle:
     def magic_cksum(self):
         cksums = [
             self.header_cksum(),
-            data_cksum(self.solution),
-            data_cksum(self.fill),
+            data_cksum(self.solution.encode(ENCODING)),
+            data_cksum(self.fill.encode(ENCODING)),
             self.text_cksum()
         ]
 
         cksum_magic = 0
         for (i, cksum) in enumerate(reversed(cksums)):
             cksum_magic <<= 8
-            cksum_magic |= (ord(maskstring[len(cksums) - i - 1]) ^ (cksum & 0x00ff))
-            cksum_magic |= (ord(maskstring[len(cksums) - i - 1 + 4]) ^ (cksum >> 8)) << 32
+            cksum_magic |= (ord(MASKSTRING[len(cksums) - i - 1]) ^ (cksum & 0x00ff))
+            cksum_magic |= (ord(MASKSTRING[len(cksums) - i - 1 + 4]) ^ (cksum >> 8)) << 32
 
         return cksum_magic
 
@@ -302,9 +320,8 @@ class PuzzleBuffer:
     wraps a data buffer ('' or []) and provides .puz-specific methods for
     reading and writing data
     """
-    def __init__(self, data=None, enc='ISO-8859-1'):
+    def __init__(self, data=None):
         self.data = data or []
-        self.enc = enc
         self.pos = 0
 
     def can_read(self, bytes=1):
@@ -324,12 +341,12 @@ class PuzzleBuffer:
         return self.data[start:self.pos]
 
     def read_string(self):
-        return self.read_until('\0')
+        return self.read_until(b'\0')
 
     def read_until(self, c):
         start = self.pos
         self.seek_to(c, 1) # read past
-        return unicode(self.data[start:self.pos-1], self.enc)
+        return str(self.data[start:self.pos-1], ENCODING)
 
     def seek(self, pos):
         self.pos = pos
@@ -348,7 +365,7 @@ class PuzzleBuffer:
 
     def write_string(self, s):
         s = s or ''
-        self.data.append(s.encode(self.enc) + '\0')
+        self.data.append(s.encode(ENCODING) + b'\0')
 
     def pack(self, format, *values):
         self.data.append(struct.pack(format, *values))
@@ -365,8 +382,8 @@ class PuzzleBuffer:
         except struct.error:
             raise PuzzleFormatError('could not unpack values at %d for format %s' % (start, format))
 
-    def tostring(self):
-        return ''.join(self.data)
+    def tobytes(self):
+        return b''.join(self.data)
 
 
 # clue numbering helper
@@ -383,7 +400,7 @@ class DefaultClueNumbering:
         d = []
         c = 0
         n = 1
-        for i in xrange(0, len(grid)):
+        for i in range(0, len(grid)):
             if not is_blacksquare(grid[i]):
                 lastc = c
                 if (self.col(i) == 0 or is_blacksquare(grid[i - 1])) and self.len_across(i) > 1:
@@ -404,16 +421,16 @@ class DefaultClueNumbering:
         return index % self.width
 
     def row(self, index):
-        return index / self.width
+        return int(math.floor(index / self.width))
 
     def len_across(self, index):
-        for c in xrange(0, self.width - self.col(index)):
+        for c in range(0, self.width - self.col(index)):
             if is_blacksquare(self.grid[index + c]):
                 return c
         return c + 1
 
     def len_down(self, index):
-        for c in xrange(0, self.height - self.row(index)):
+        for c in range(0, self.height - self.row(index)):
             if is_blacksquare(self.grid[index + c*self.width]):
                 return c
         return c + 1
@@ -422,9 +439,11 @@ class Rebus:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse rebus data
-        self.table = parse_bytes(self.puzzle.extensions.get(Extensions.Rebus, ''))
-        self.solutions = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(self.puzzle.extensions.get(Extensions.RebusSolutions, '')).items()))
-        self.fill = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(self.puzzle.extensions.get(Extensions.RebusFill, '')).items()))
+        self.table = parse_bytes(self.puzzle.extensions.get(Extensions.Rebus, b''))
+        solutions_str = self.puzzle.extensions.get(Extensions.RebusSolutions, b'').decode(ENCODING)
+        fill_str = self.puzzle.extensions.get(Extensions.RebusFill, b'').decode(ENCODING)
+        self.solutions = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(solutions_str).items()))
+        self.fill = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(fill_str).items()))
 
     def has_rebus(self):
         return Extensions.Rebus in self.puzzle.extensions
@@ -448,15 +467,15 @@ class Rebus:
     def save(self):
         if self.has_rebus():
             # commit changes back to puzzle.extensions
-            self.puzzle.extensions[Extensions.Rebus] = bytes_to_string(self.table)
-            self.puzzle.extensions[Extensions.RebusSolutions] = dict_to_string(self.solutions)
-            self.puzzle.extensions[Extensions.RebusFill] = dict_to_string(self.fill)
+            self.puzzle.extensions[Extensions.Rebus] = pack_bytes(self.table)
+            self.puzzle.extensions[Extensions.RebusSolutions] = dict_to_string(self.solutions).encode(ENCODING)
+            self.puzzle.extensions[Extensions.RebusFill] = dict_to_string(self.fill).encode(ENCODING)
 
 class Markup:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse markup data
-        self.markup = parse_bytes(self.puzzle.extensions.get(Extensions.Markup, ''))
+        self.markup = parse_bytes(self.puzzle.extensions.get(Extensions.Markup, b''))
 
     def has_markup(self):
         return any(bool(b) for b in self.markup)
@@ -469,12 +488,13 @@ class Markup:
 
     def save(self):
         if self.has_markup():
-            self.puzzle.extensions[Extensions.Markup] = bytes_to_string(self.markup)
+            self.puzzle.extensions[Extensions.Markup] = pack_bytes(self.markup)
 
 # helper functions for cksums and scrambling
 def data_cksum(data, cksum=0):
-    for c in data:
-        b = ord(c)
+    for b in data:
+        if isinstance(b, bytes):
+            b = ord(b)
         # right-shift one with wrap-around
         lowbit = (cksum & 0x0001)
         cksum = (cksum >> 1)
@@ -526,7 +546,8 @@ def unscramble_string(s, key):
     return s
 
 def scrambled_cksum(scrambled, width, height):
-    return data_cksum(square(scrambled, width, height).replace(BLACKSQUARE, ''))
+    data = square(scrambled, width, height).replace(BLACKSQUARE, '')
+    return data_cksum(data.encode(ENCODING))
 
 def key_digits(key):
     return [int(c) for c in str(key).zfill(4)]
@@ -536,15 +557,16 @@ def square(data, w, h):
     return ''.join([''.join([aa[r][c] for r in range(0, h)]) for c in range(0, w)])
 
 def shift(s, key):
-    atoz = string.uppercase
+    atoz = string.ascii_uppercase
     return ''.join(atoz[(atoz.index(c) + key[i % len(key)]) % len(atoz)] for i, c in enumerate(s))
 
 def unshift(s, key):
     return shift(s, [-k for k in key])
 
 def shuffle(s):
-    mid = len(s) / 2
-    return ''.join(reduce(operator.add, zip(s[mid:], s[:mid]))) + (s[-1] if len(s) % 2 else '')
+    mid = int(math.floor(len(s) / 2))
+    items = functools.reduce(operator.add, zip(s[mid:], s[:mid]))
+    return ''.join(items) + (s[-1] if len(s) % 2 else '')
 
 def unshuffle(s):
     return s[1::2] + s[::2]
@@ -559,9 +581,11 @@ def restore(s, t):
     'XYZ.ABC'
     """
     t = (c for c in t)
-    return ''.join(t.next() if not is_blacksquare(c) else c for c in s)
+    return ''.join(next(t) if not is_blacksquare(c) else c for c in s)
 
 def is_blacksquare(c):
+    if isinstance(c, int):
+        c = chr(c)
     return c == BLACKSQUARE
 
 #
@@ -571,7 +595,7 @@ def is_blacksquare(c):
 def parse_bytes(s):
     return list(struct.unpack('B' * len(s), s))
 
-def bytes_to_string(a):
+def pack_bytes(a):
     return struct.pack('B' * len(a), *a)
 
 # dict string format is k1:v1;k2:v2;...;kn:vn;
