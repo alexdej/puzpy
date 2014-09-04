@@ -1,8 +1,10 @@
+import glob
 import os
 import sys
-import glob
 import unittest
+
 import puz
+
 
 class PuzzleTests(unittest.TestCase):
     def testClueNumbering(self):
@@ -47,6 +49,7 @@ class PuzzleTests(unittest.TestCase):
         self.assertFalse(puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Diagramless)
         self.assertFalse(puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Diagramless)
         self.assertTrue(puz.read('testfiles/nyt_diagramless.puz').puzzletype == puz.PuzzleType.Diagramless)
+
 
 class LockTests(unittest.TestCase):
     def testScrambleFunctions(self):
@@ -94,6 +97,7 @@ class LockTests(unittest.TestCase):
         self.assertTrue(p2.is_solution_locked())
         self.assertTrue(p2.check_answers(p1.solution))
 
+
 class RoundtripPuzfileTests(unittest.TestCase):
     def __init__(self, filename):
         unittest.TestCase.__init__(self)
@@ -113,9 +117,14 @@ class RoundtripPuzfileTests(unittest.TestCase):
         except puz.PuzzleFormatError:
             self.assertTrue(False, '%s threw PuzzleFormatError: %s' % (self.filename, sys.exc_info()[1].message))
 
-def tests_in_dir(dir):
-    return sum((list(map(RoundtripPuzfileTests, glob.glob(os.path.join(path, '*.puz'))))
-                for path, dirs, files in os.walk(dir)), [])
+
+def tests_in_dir(directory):
+    tests = []
+    for path, _, _ in os.walk(directory):
+        for filename in glob.glob(os.path.join(path, '*.puz')):
+            tests.append(RoundtripPuzfileTests(filename))
+    return tests
+
 
 def suite():
     # suite consists of any test* method defined in PuzzleTests, plus a round-trip
