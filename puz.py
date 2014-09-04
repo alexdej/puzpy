@@ -36,6 +36,7 @@ BLACKSQUARE = '.'
 def enum(**enums):
     return type('Enum', (), enums)
 
+
 PuzzleType = enum(Normal=0x0001,
                   Diagramless=0x0401)
 
@@ -56,6 +57,7 @@ Extensions = enum(Rebus=b'GRBS',             # grid of rebus indices: 0 for non-
                   Timer=b'LTIM',             # timer state: 'a,b' where a is the number of seconds elapsed and b is a boolean (0,1) for whether the timer is running
                   Markup=b'GEXT')            # grid cell markup: previously incorrect: 0x10; currently incorrect: 0x20, hinted: 0x40, circled: 0x80
 
+
 def read(filename):
     """Read a .puz file and return the Puzzle object
     throws PuzzleFormatError if there's any problem with the file format
@@ -64,6 +66,7 @@ def read(filename):
         puz = Puzzle()
         puz.load(f.read())
         return puz
+
 
 def load(data):
     """Read .puz file data and return the Puzzle object
@@ -80,6 +83,7 @@ class PuzzleFormatError(Exception):
     """
     def __init__(self, message=''):
         self.message = message
+
 
 class Puzzle:
     """Represents a puzzle
@@ -429,6 +433,7 @@ class DefaultClueNumbering:
                 return c
         return c + 1
 
+
 class Rebus:
     def __init__(self, puzzle):
         self.puzzle = puzzle
@@ -465,6 +470,7 @@ class Rebus:
             self.puzzle.extensions[Extensions.RebusSolutions] = dict_to_string(self.solutions).encode(ENCODING)
             self.puzzle.extensions[Extensions.RebusFill] = dict_to_string(self.fill).encode(ENCODING)
 
+
 class Markup:
     def __init__(self, puzzle):
         self.puzzle = puzzle
@@ -484,6 +490,7 @@ class Markup:
         if self.has_markup():
             self.puzzle.extensions[Extensions.Markup] = pack_bytes(self.markup)
 
+
 # helper functions for cksums and scrambling
 def data_cksum(data, cksum=0):
     for b in data:
@@ -499,9 +506,11 @@ def data_cksum(data, cksum=0):
 
     return cksum
 
+
 def scramble_solution(solution, width, height, key):
     sq = square(solution, width, height)
     return square(restore(sq, scramble_string(sq.replace(BLACKSQUARE, ''), key)), height, width)
+
 
 def scramble_string(s, key):
     """
@@ -524,10 +533,12 @@ def scramble_string(s, key):
 
     return s
 
+
 def unscramble_solution(scrambled, width, height, key):
     # width and height are reversed here
     sq = square(scrambled, width, height)
     return square(restore(sq, unscramble_string(sq.replace(BLACKSQUARE, ''), key)), height, width)
+
 
 def unscramble_string(s, key):
     key = key_digits(key)
@@ -539,31 +550,39 @@ def unscramble_string(s, key):
 
     return s
 
+
 def scrambled_cksum(scrambled, width, height):
     data = square(scrambled, width, height).replace(BLACKSQUARE, '')
     return data_cksum(data.encode(ENCODING))
 
+
 def key_digits(key):
     return [int(c) for c in str(key).zfill(4)]
+
 
 def square(data, w, h):
     aa = [data[i:i+w] for i in range(0, len(data), w)]
     return ''.join([''.join([aa[r][c] for r in range(0, h)]) for c in range(0, w)])
 
+
 def shift(s, key):
     atoz = string.ascii_uppercase
     return ''.join(atoz[(atoz.index(c) + key[i % len(key)]) % len(atoz)] for i, c in enumerate(s))
 
+
 def unshift(s, key):
     return shift(s, [-k for k in key])
+
 
 def shuffle(s):
     mid = int(math.floor(len(s) / 2))
     items = functools.reduce(operator.add, zip(s[mid:], s[:mid]))
     return ''.join(items) + (s[-1] if len(s) % 2 else '')
 
+
 def unshuffle(s):
     return s[1::2] + s[::2]
+
 
 def restore(s, t):
     """
@@ -577,6 +596,7 @@ def restore(s, t):
     t = (c for c in t)
     return ''.join(next(t) if not is_blacksquare(c) else c for c in s)
 
+
 def is_blacksquare(c):
     if isinstance(c, int):
         c = chr(c)
@@ -589,6 +609,7 @@ def is_blacksquare(c):
 def parse_bytes(s):
     return list(struct.unpack('B' * len(s), s))
 
+
 def pack_bytes(a):
     return struct.pack('B' * len(a), *a)
 
@@ -596,6 +617,7 @@ def pack_bytes(a):
 # (for whatever reason there's a trailing ';')
 def parse_dict(s):
     return dict(p.split(':') for p in s.split(';') if ':' in p)
+
 
 def dict_to_string(d):
     return ';'.join(':'.join(map(str, [k,v])) for k,v in d.items()) + ';'
