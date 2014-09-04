@@ -121,8 +121,8 @@ def suite():
     # suite consists of any test* method defined in PuzzleTests, plus a round-trip
     # test for each .puz file in ./testfiles/
     suite = unittest.TestSuite()
-    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(PuzzleTests))
-    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(LockTests))
+    suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(PuzzleTests))
+    suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(LockTests))
     suite.addTests(tests_in_dir('testfiles'))
     #suite.addTests(tests_in_dir('../xwordapp/data/'))
 
