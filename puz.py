@@ -60,13 +60,10 @@ def read(filename):
     """Read a .puz file and return the Puzzle object
     throws PuzzleFormatError if there's any problem with the file format
     """
-    f = open(filename, 'rb')
-    try:
+    with open(filename, 'rb') as f:
         puz = Puzzle()
         puz.load(f.read())
         return puz
-    finally:
-        f.close()
 
 def load(data):
     """Read .puz file data and return the Puzzle object
@@ -167,11 +164,8 @@ class Puzzle:
                 raise PuzzleFormatError('extension %s checksum does not match' % code)
 
     def save(self, filename):
-        f = open(filename, 'wb')
-        try:
+        with open(filename, 'wb') as f:
             f.write(self.tobytes())
-        finally:
-            f.close()
 
     def tobytes(self):
         s = PuzzleBuffer()
