@@ -94,11 +94,11 @@ class Puzzle:
         self.copyright = ''
         self.width = 0
         self.height = 0
-        self.version = '1.3'
-        self.fileversion = '1.3\0' # default
+        self.version = b'1.3'
+        self.fileversion = b'1.3\0' # default
         # these are bytes that might be unused
-        self.unk1 = '\0' * 2
-        self.unk2 = '\0' * 12
+        self.unk1 = b'\0' * 2
+        self.unk2 = b'\0' * 12
         self.scrambled_cksum = 0
         self.fill = ''
         self.solution = ''
