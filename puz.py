@@ -99,7 +99,7 @@ class Puzzle:
         self.width = 0
         self.height = 0
         self.version = b'1.3'
-        self.fileversion = b'1.3\0' # default
+        self.fileversion = b'1.3\0'  # default
         # these are bytes that might be unused
         self.unk1 = b'\0' * 2
         self.unk2 = b'\0' * 12
@@ -109,10 +109,10 @@ class Puzzle:
         self.clues = []
         self.notes = ''
         self.extensions = {}
-        self._extensions_order = [] # so that we can round-trip values in order
+        self._extensions_order = []  # so that we can round-trip values in order
         self.puzzletype = PuzzleType.Normal
         self.solution_state = SolutionState.Unlocked
-        self.helpers = {} # add-ons like Rebus and Markup
+        self.helpers = {}  # add-ons like Rebus and Markup
 
     def load(self, data):
         s = PuzzleBuffer(data)
@@ -126,7 +126,7 @@ class Puzzle:
         self.preamble = s.data[:s.pos]
 
         (cksum_gbl, acrossDown, cksum_hdr, cksum_magic,
-         self.fileversion, self.unk1, # since we don't know the role of these bytes, just round-trip them
+         self.fileversion, self.unk1,  # since we don't know the role of these bytes, just round-trip them
          self.scrambled_cksum, self.unk2,
          self.width, self.height, numclues, self.puzzletype, self.solution_state
         ) = s.unpack(HEADER_FORMAT)
@@ -149,7 +149,7 @@ class Puzzle:
             # extension data is represented as a null-terminated string, but since the data can contain nulls
             # we can't use read_string
             self.extensions[code] = s.read(length)
-            s.read(1) # extensions have a trailing byte
+            s.read(1)  # extensions have a trailing byte
             # save the codes in order for round-tripping
             self._extensions_order.append(code)
 
@@ -343,7 +343,7 @@ class PuzzleBuffer:
 
     def read_until(self, c):
         start = self.pos
-        self.seek_to(c, 1) # read past
+        self.seek_to(c, 1)  # read past
         return str(self.data[start:self.pos-1], ENCODING)
 
     def seek(self, pos):
@@ -402,11 +402,11 @@ class DefaultClueNumbering:
             if not is_blacksquare(grid[i]):
                 lastc = c
                 if (self.col(i) == 0 or is_blacksquare(grid[i - 1])) and self.len_across(i) > 1:
-                    clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_across(i) }
+                    clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_across(i)}
                     a.append(clue)
                     c += 1
                 if (self.row(i) == 0 or is_blacksquare(grid[i - width])) and self.len_down(i) > 1:
-                    clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_down(i) }
+                    clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_down(i)}
                     d.append(clue)
                     c += 1
                 if c > lastc:
@@ -481,7 +481,7 @@ class Markup:
         return any(bool(b) for b in self.markup)
 
     def get_markup_squares(self):
-        return [i for i,b in enumerate(self.markup) if b]
+        return [i for i, b in enumerate(self.markup) if b]
 
     def is_markup_square(self, index):
         return bool(self.table[index])
@@ -499,7 +499,8 @@ def data_cksum(data, cksum=0):
         # right-shift one with wrap-around
         lowbit = (cksum & 0x0001)
         cksum = (cksum >> 1)
-        if lowbit: cksum = (cksum | 0x8000)
+        if lowbit:
+            cksum = (cksum | 0x8000)
 
         # then add in the data and clear any carried bit past 16
         cksum = (cksum + b) & 0xffff
@@ -526,7 +527,7 @@ def scramble_string(s, key):
 
     """
     key = key_digits(key)
-    for k in key: # foreach digit in the key
+    for k in key:          # foreach digit in the key
         s = shift(s, key)  # xform each char by each digit in the key in sequence
         s = s[k:] + s[:k]  # cut the sequence around the key digit
         s = shuffle(s)     # do a 1:1 shuffle of the 'deck'
@@ -602,9 +603,11 @@ def is_blacksquare(c):
         c = chr(c)
     return c == BLACKSQUARE
 
+
 #
 # functions for parsing / serializing primitives
 #
+
 
 def parse_bytes(s):
     return list(struct.unpack('B' * len(s), s))
@@ -613,6 +616,7 @@ def parse_bytes(s):
 def pack_bytes(a):
     return struct.pack('B' * len(a), *a)
 
+
 # dict string format is k1:v1;k2:v2;...;kn:vn;
 # (for whatever reason there's a trailing ';')
 def parse_dict(s):
@@ -620,4 +624,4 @@ def parse_dict(s):
 
 
 def dict_to_string(d):
-    return ';'.join(':'.join(map(str, [k,v])) for k,v in d.items()) + ';'
+    return ';'.join(':'.join(map(str, [k, v])) for k, v in d.items()) + ';'
