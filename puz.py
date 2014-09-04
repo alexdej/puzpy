@@ -318,15 +318,15 @@ class PuzzleBuffer:
         self.data = data or []
         self.pos = 0
 
-    def can_read(self, bytes=1):
-        return self.pos + bytes <= len(self.data)
+    def can_read(self, n_bytes=1):
+        return self.pos + n_bytes <= len(self.data)
 
     def length(self):
         return len(self.data)
 
-    def read(self, bytes):
+    def read(self, n_bytes):
         start = self.pos
-        self.pos += bytes
+        self.pos += n_bytes
         return self.data[start:self.pos]
 
     def read_to_end(self):
@@ -361,20 +361,20 @@ class PuzzleBuffer:
         s = s or ''
         self.data.append(s.encode(ENCODING) + b'\0')
 
-    def pack(self, format, *values):
-        self.data.append(struct.pack(format, *values))
+    def pack(self, struct_format, *values):
+        self.data.append(struct.pack(struct_format, *values))
 
-    def can_unpack(self, format):
-        return self.can_read(struct.calcsize(format))
+    def can_unpack(self, struct_format):
+        return self.can_read(struct.calcsize(struct_format))
 
-    def unpack(self, format):
+    def unpack(self, struct_format):
         start = self.pos
         try:
-            res = struct.unpack_from(format, self.data, self.pos)
-            self.pos += struct.calcsize(format)
+            res = struct.unpack_from(struct_format, self.data, self.pos)
+            self.pos += struct.calcsize(struct_format)
             return res
         except struct.error:
-            raise PuzzleFormatError('could not unpack values at %d for format %s' % (start, format))
+            raise PuzzleFormatError('could not unpack values at %d for format %s' % (start, struct_format))
 
     def tobytes(self):
         return b''.join(self.data)
