@@ -441,8 +441,8 @@ class Rebus:
         self.table = parse_bytes(self.puzzle.extensions.get(Extensions.Rebus, b''))
         solutions_str = self.puzzle.extensions.get(Extensions.RebusSolutions, b'').decode(ENCODING)
         fill_str = self.puzzle.extensions.get(Extensions.RebusFill, b'').decode(ENCODING)
-        self.solutions = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(solutions_str).items()))
-        self.fill = dict(map(lambda p: (int(p[0]), p[1]), parse_dict(fill_str).items()))
+        self.solutions = {int(item[0]): item[1] for item in parse_dict(solutions_str).items()}
+        self.fill = {int(item[0]): item[1] for item in parse_dict(fill_str).items()}
 
     def has_rebus(self):
         return Extensions.Rebus in self.puzzle.extensions
