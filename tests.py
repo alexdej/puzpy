@@ -14,9 +14,9 @@ class PuzzleTests(unittest.TestCase):
 
     def testExtensions(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
-        self.assertTrue(puz.Extensions.Rebus in p.extensions)
-        self.assertTrue(puz.Extensions.RebusSolutions in p.extensions)
-        self.assertTrue(puz.Extensions.Markup in p.extensions)
+        self.assertIn(puz.Extensions.Rebus, p.extensions)
+        self.assertIn(puz.Extensions.RebusSolutions, p.extensions)
+        self.assertIn(puz.Extensions.Markup, p.extensions)
 
     def testRebus(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
@@ -26,7 +26,7 @@ class PuzzleTests(unittest.TestCase):
         self.assertEqual(3, len(r.get_rebus_squares()))
         self.assertTrue(all(r.is_rebus_square(i) for i in r.get_rebus_squares()))
         self.assertTrue(all('STAR' == r.get_rebus_solution(i) for i in r.get_rebus_squares()))
-        self.assertTrue(None == r.get_rebus_solution(100))
+        self.assertEqual(None, r.get_rebus_solution(100))
         # trigger save
         p.tobytes()
 
@@ -46,9 +46,9 @@ class PuzzleTests(unittest.TestCase):
         p.tobytes()
 
     def testPuzzleType(self):
-        self.assertFalse(puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Diagramless)
-        self.assertFalse(puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Diagramless)
-        self.assertTrue(puz.read('testfiles/nyt_diagramless.puz').puzzletype == puz.PuzzleType.Diagramless)
+        self.assertNotEqual(puz.read('testfiles/washpost.puz').puzzletype, puz.PuzzleType.Diagramless)
+        self.assertNotEqual(puz.read('testfiles/nyt_locked.puz').puzzletype, puz.PuzzleType.Diagramless)
+        self.assertEqual(puz.read('testfiles/nyt_diagramless.puz').puzzletype, puz.PuzzleType.Diagramless)
 
     def testEmptyPuzzle(self):
         p = puz.Puzzle()
@@ -81,7 +81,7 @@ class LockTests(unittest.TestCase):
         self.assertTrue(p.is_solution_locked())  # still locked
         self.assertTrue(p.unlock_solution(7844))
         self.assertFalse(p.is_solution_locked())  # unlocked!
-        self.assertTrue('LAKEONTARIO' in p.solution)
+        self.assertIn('LAKEONTARIO', p.solution)
 
     def testUnlockRelock(self):
         with open('testfiles/nyt_locked.puz', 'rb') as fp:
@@ -91,7 +91,7 @@ class LockTests(unittest.TestCase):
         self.assertTrue(p.unlock_solution(7844))
         p.lock_solution(7844)
         new = p.tobytes()
-        self.assertEqual(orig, new, 'nyt_locked.puz dit not found-trip')
+        self.assertEqual(orig, new, 'nyt_locked.puz did not round-trip')
 
     def testCheckAnswersLocked(self):
         '''Verify that we can check answers even when the solution is locked
