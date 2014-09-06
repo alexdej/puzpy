@@ -63,9 +63,7 @@ def read(filename):
     throws PuzzleFormatError if there's any problem with the file format
     """
     with open(filename, 'rb') as f:
-        puz = Puzzle()
-        puz.load(f.read())
-        return puz
+        return load(f.read())
 
 
 def load(data):
