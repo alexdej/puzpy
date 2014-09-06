@@ -57,7 +57,7 @@ class PuzzleTests(unittest.TestCase):
             p.load(b'')
 
     def test_junk_at_end_of_puzzle(self):
-        with open('testfiles/washpost.puz') as fp:
+        with open('testfiles/washpost.puz', 'rb') as fp:
             data = fp.read() + b'\r\n\r\n'
         p = puz.Puzzle()
         p.load(data)
