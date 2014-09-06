@@ -120,15 +120,16 @@ class RoundtripPuzfileTests(unittest.TestCase):
 
     def runTest(self):
         try:
-            orig = open(self.filename, 'rb').read()
-            p = puz.read(self.filename)
-            if (p.puzzletype == puz.PuzzleType.Normal):
-                clues = p.clue_numbering()
-                # smoke test the clue numbering while we're at it
-                self.assertEqual(len(p.clues), len(clues.across) + len(clues.down), 'failed in %s' % self.filename)
-            # this is the roundtrip
-            new = p.tobytes()
-            self.assertEqual(orig, new, '%s did not round-trip' % self.filename)
+            with open(self.filename, 'rb') as fp_filename:
+                orig = fp_filename.read()
+                p = puz.read(self.filename)
+                if (p.puzzletype == puz.PuzzleType.Normal):
+                    clues = p.clue_numbering()
+                    # smoke test the clue numbering while we're at it
+                    self.assertEqual(len(p.clues), len(clues.across) + len(clues.down), 'failed in %s' % self.filename)
+                # this is the roundtrip
+                new = p.tobytes()
+                self.assertEqual(orig, new, '%s did not round-trip' % self.filename)
         except puz.PuzzleFormatError:
             self.assertTrue(False, '%s threw PuzzleFormatError: %s' % (self.filename, sys.exc_info()[1].message))
 
