@@ -55,6 +55,13 @@ class PuzzleTests(unittest.TestCase):
         with self.assertRaises(puz.PuzzleFormatError):
             p.load(b'')
 
+    def testJunkAtEndOfPuzzle(self):
+        with open('testfiles/washpost.puz') as fp:
+            data = fp.read() + b'\r\n\r\n'
+        p = puz.Puzzle()
+        p.load(data)
+        self.assertEqual(p.postscript, b'\r\n\r\n')
+
 
 class LockTests(unittest.TestCase):
     def testScrambleFunctions(self):
