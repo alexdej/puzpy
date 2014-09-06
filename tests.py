@@ -78,9 +78,9 @@ class LockTests(unittest.TestCase):
         p = puz.read('testfiles/nyt_locked.puz')
         self.assertTrue(p.is_solution_locked())
         self.assertFalse(p.unlock_solution(1234))
-        self.assertTrue(p.is_solution_locked()) # still locked
+        self.assertTrue(p.is_solution_locked())  # still locked
         self.assertTrue(p.unlock_solution(7844))
-        self.assertFalse(p.is_solution_locked()) # unlocked!
+        self.assertFalse(p.is_solution_locked())  # unlocked!
         self.assertTrue('LAKEONTARIO' in p.solution)
 
     def testUnlockRelock(self):
@@ -138,10 +138,9 @@ def suite():
     suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(PuzzleTests))
     suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(LockTests))
     suite.addTests(tests_in_dir('testfiles'))
-    #suite.addTests(tests_in_dir('../xwordapp/data/'))
-
     return suite
 
+
 if __name__ == '__main__':
-  print(__file__)
-  unittest.TextTestRunner().run(suite())
+    print(__file__)
+    unittest.TextTestRunner().run(suite())
