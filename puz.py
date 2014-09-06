@@ -344,9 +344,6 @@ class PuzzleBuffer:
         self.seek_to(c, 1)  # read past
         return str(self.data[start:self.pos-1], ENCODING)
 
-    def seek(self, pos):
-        self.pos = pos
-
     def seek_to(self, s, offset=0):
         try:
             self.pos = self.data.index(s, self.pos) + offset
