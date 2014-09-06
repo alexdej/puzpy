@@ -50,6 +50,11 @@ class PuzzleTests(unittest.TestCase):
         self.assertFalse(puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Diagramless)
         self.assertTrue(puz.read('testfiles/nyt_diagramless.puz').puzzletype == puz.PuzzleType.Diagramless)
 
+    def testEmptyPuzzle(self):
+        p = puz.Puzzle()
+        with self.assertRaises(puz.PuzzleFormatError):
+            p.load(b'')
+
 
 class LockTests(unittest.TestCase):
     def testScrambleFunctions(self):
