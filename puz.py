@@ -37,25 +37,30 @@ def enum(**enums):
     return type('Enum', (), enums)
 
 
-PuzzleType = enum(Normal=0x0001,
-                  Diagramless=0x0401)
+PuzzleType = enum(
+    Normal=0x0001,
+    Diagramless=0x0401)
 
-# the following diverges from the documentation but works for the files I've tested
-SolutionState = enum(Unlocked=0x0000,      # solution is available in plaintext
-                     Locked=0x0004)        # solution is locked (scrambled) with a key
+# the following diverges from the documentation
+# but works for the files I've tested
+SolutionState = enum(
+    Unlocked=0x0000,      # solution is available in plaintext
+    Locked=0x0004)        # solution is locked (scrambled) with a key
 
-GridMarkup = enum(Default=0x00,              # ordinary grid cell
-                  PreviouslyIncorrect=0x10,  # marked incorrect at some point
-                  Incorrect=0x20,            # currently showing incorrect
-                  Revealed=0x40,             # user got a hint
-                  Circled=0x80)              # circled
+GridMarkup = enum(
+    Default=0x00,              # ordinary grid cell
+    PreviouslyIncorrect=0x10,  # marked incorrect at some point
+    Incorrect=0x20,            # currently showing incorrect
+    Revealed=0x40,             # user got a hint
+    Circled=0x80)              # circled
 
 # refer to Extensions as Extensions.Rebus, Extensions.Markup
-Extensions = enum(Rebus=b'GRBS',             # grid of rebus indices: 0 for non-rebus; i+1 for key i into RebusSolutions map
-                  RebusSolutions=b'RTBL',    # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
-                  RebusFill=b'RUSR',         # user's rebus entries
-                  Timer=b'LTIM',             # timer state: 'a,b' where a is the number of seconds elapsed and b is a boolean (0,1) for whether the timer is running
-                  Markup=b'GEXT')            # grid cell markup: previously incorrect: 0x10; currently incorrect: 0x20, hinted: 0x40, circled: 0x80
+Extensions = enum(
+    Rebus=b'GRBS',             # grid of rebus indices: 0 for non-rebus; i+1 for key i into RebusSolutions map
+    RebusSolutions=b'RTBL',    # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
+    RebusFill=b'RUSR',         # user's rebus entries
+    Timer=b'LTIM',             # timer state: 'a,b' where a is the number of seconds elapsed and b is a boolean (0,1) for whether the timer is running
+    Markup=b'GEXT')            # grid cell markup: previously incorrect: 0x10; currently incorrect: 0x20, hinted: 0x40, circled: 0x80
 
 
 def read(filename):
@@ -119,7 +124,9 @@ class Puzzle:
         # use the ACROSS&DOWN magic string as a waypoint
         # save the preamble for round-tripping
         if not s.seek_to(ACROSSDOWN.encode(ENCODING), -2):
-            raise PuzzleFormatError("Data does not appear to represent a puzzle. Are you sure you didn't intend to use read?")
+            raise PuzzleFormatError("Data does not appear to represent a "
+                                    "puzzle. Are you sure you didn't intend "
+                                    "to use read?")
 
         self.preamble = s.data[:s.pos]
 
@@ -129,7 +136,8 @@ class Puzzle:
         cksum_hdr = puzzle_data[2]
         cksum_magic = puzzle_data[3]
         self.fileversion = puzzle_data[4]
-        self.unk1 = puzzle_data[5]  # since we don't know the role of these bytes, just round-trip them
+        # since we don't know the role of these bytes, just round-trip them
+        self.unk1 = puzzle_data[5]
         self.scrambled_cksum = puzzle_data[6]
         self.unk2 = puzzle_data[7]
         self.width = puzzle_data[8]
@@ -153,8 +161,8 @@ class Puzzle:
         while s.can_unpack(EXTENSION_HEADER_FORMAT):
             code, length, cksum = s.unpack(EXTENSION_HEADER_FORMAT)
             ext_cksum[code] = cksum
-            # extension data is represented as a null-terminated string, but since the data can contain nulls
-            # we can't use read_string
+            # extension data is represented as a null-terminated string,
+            # but since the data can contain nulls we can't use read_string
             self.extensions[code] = s.read(length)
             s.read(1)  # extensions have a trailing byte
             # save the codes in order for round-tripping
@@ -239,7 +247,9 @@ class Puzzle:
         return self.helpers.setdefault('markup', Markup(self))
 
     def clue_numbering(self):
-        return self.helpers.setdefault('clues', DefaultClueNumbering(self.fill, self.clues, self.width, self.height))
+        numbering = DefaultClueNumbering(self.fill, self.clues,
+                                         self.width, self.height)
+        return self.helpers.setdefault('clues', numbering)
 
     def is_solution_locked(self):
         return bool(self.solution_state != SolutionState.Unlocked)
@@ -384,7 +394,10 @@ class PuzzleBuffer:
             self.pos += struct.calcsize(struct_format)
             return res
         except struct.error:
-            raise PuzzleFormatError('could not unpack values at %d for format %s' % (start, struct_format))
+            message = 'could not unpack values at {} for format {}'.format(
+                start, struct_format
+            )
+            raise PuzzleFormatError(message)
 
     def tobytes(self):
         return b''.join(self.data)
@@ -407,13 +420,23 @@ class DefaultClueNumbering:
         for i in range(0, len(grid)):
             if not is_blacksquare(grid[i]):
                 lastc = c
-                if (self.col(i) == 0 or is_blacksquare(grid[i - 1])) and self.len_across(i) > 1:
-                    clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_across(i)}
-                    a.append(clue)
+                is_across = self.col(i) == 0 or is_blacksquare(grid[i - 1])
+                if is_across and self.len_across(i) > 1:
+                    a.append({
+                        'num': n,
+                        'clue': clues[c],
+                        'cell': i,
+                        'len': self.len_across(i)
+                    })
                     c += 1
-                if (self.row(i) == 0 or is_blacksquare(grid[i - width])) and self.len_down(i) > 1:
-                    clue = {'num': n, 'clue': clues[c], 'cell': i, 'len': self.len_down(i)}
-                    d.append(clue)
+                is_down = self.row(i) == 0 or is_blacksquare(grid[i - width])
+                if is_down and self.len_down(i) > 1:
+                    d.append({
+                        'num': n,
+                        'clue': clues[c],
+                        'cell': i,
+                        'len': self.len_down(i)
+                    })
                     c += 1
                 if c > lastc:
                     n += 1
@@ -473,8 +496,10 @@ class Rebus:
         if self.has_rebus():
             # commit changes back to puzzle.extensions
             self.puzzle.extensions[Extensions.Rebus] = pack_bytes(self.table)
-            self.puzzle.extensions[Extensions.RebusSolutions] = dict_to_string(self.solutions).encode(ENCODING)
-            self.puzzle.extensions[Extensions.RebusFill] = dict_to_string(self.fill).encode(ENCODING)
+            rebus_solutions = dict_to_string(self.solutions).encode(ENCODING)
+            self.puzzle.extensions[Extensions.RebusSolutions] = rebus_solutions
+            rebus_fill = dict_to_string(self.fill).encode(ENCODING)
+            self.puzzle.extensions[Extensions.RebusFill] = rebus_fill
 
 
 class Markup:
@@ -595,7 +620,9 @@ def restore(s, t):
     """
     s is the source string, it can contain '.'
     t is the target, it's smaller than s by the number of '.'s in s
-    each char in s is replaced by the corresponding char in t, jumping over '.'s in s
+
+    Each char in s is replaced by the corresponding
+    char in t, jumping over '.'s in s.
 
     >>> restore('ABC.DEF', 'XYZABC')
     'XYZ.ABC'
