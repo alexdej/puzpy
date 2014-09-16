@@ -123,11 +123,20 @@ class Puzzle:
 
         self.preamble = s.data[:s.pos]
 
-        (cksum_gbl, acrossDown, cksum_hdr, cksum_magic,
-         self.fileversion, self.unk1,  # since we don't know the role of these bytes, just round-trip them
-         self.scrambled_cksum, self.unk2,
-         self.width, self.height, numclues, self.puzzletype, self.solution_state
-        ) = s.unpack(HEADER_FORMAT)
+        puzzle_data = s.unpack(HEADER_FORMAT)
+        cksum_gbl = puzzle_data[0]
+        # acrossDown = puzzle_data[1]
+        cksum_hdr = puzzle_data[2]
+        cksum_magic = puzzle_data[3]
+        self.fileversion = puzzle_data[4]
+        self.unk1 = puzzle_data[5]  # since we don't know the role of these bytes, just round-trip them
+        self.scrambled_cksum = puzzle_data[6]
+        self.unk2 = puzzle_data[7]
+        self.width = puzzle_data[8]
+        self.height = puzzle_data[9]
+        numclues = puzzle_data[10]
+        self.puzzletype = puzzle_data[11]
+        self.solution_state = puzzle_data[12]
 
         self.version = self.fileversion[:3]
         self.solution = s.read(self.width * self.height).decode(ENCODING)
@@ -180,10 +189,11 @@ class Puzzle:
         s.write(self.preamble)
 
         s.pack(HEADER_FORMAT,
-                self.global_cksum(), ACROSSDOWN.encode(ENCODING), self.header_cksum(), self.magic_cksum(),
-                self.fileversion, self.unk1, self.scrambled_cksum,
-                self.unk2, self.width, self.height,
-                len(self.clues), self.puzzletype, self.solution_state)
+               self.global_cksum(), ACROSSDOWN.encode(ENCODING),
+               self.header_cksum(), self.magic_cksum(),
+               self.fileversion, self.unk1, self.scrambled_cksum,
+               self.unk2, self.width, self.height,
+               len(self.clues), self.puzzletype, self.solution_state)
 
         s.write(self.solution.encode(ENCODING))
         s.write(self.fill.encode(ENCODING))
@@ -263,7 +273,8 @@ class Puzzle:
 
     def header_cksum(self, cksum=0):
         return data_cksum(struct.pack(HEADER_CKSUM_FORMAT,
-            self.width, self.height, len(self.clues), self.puzzletype, self.solution_state), cksum)
+                          self.width, self.height, len(self.clues),
+                          self.puzzletype, self.solution_state), cksum)
 
     def text_cksum(self, cksum=0):
         # for the checksum to work these fields must be added in order with
