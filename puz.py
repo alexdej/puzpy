@@ -44,36 +44,59 @@ PuzzleType = enum(
 # the following diverges from the documentation
 # but works for the files I've tested
 SolutionState = enum(
-    Unlocked=0x0000,      # solution is available in plaintext
-    Locked=0x0004)        # solution is locked (scrambled) with a key
+    # solution is available in plaintext
+    Unlocked=0x0000,
+    # solution is locked (scrambled) with a key
+    Locked=0x0004
+)
 
 GridMarkup = enum(
-    Default=0x00,              # ordinary grid cell
-    PreviouslyIncorrect=0x10,  # marked incorrect at some point
-    Incorrect=0x20,            # currently showing incorrect
-    Revealed=0x40,             # user got a hint
-    Circled=0x80)              # circled
+    # ordinary grid cell
+    Default=0x00,
+    # marked incorrect at some point
+    PreviouslyIncorrect=0x10,
+    # currently showing incorrect
+    Incorrect=0x20,
+    # user got a hint
+    Revealed=0x40,
+    # circled
+    Circled=0x80
+)
+
 
 # refer to Extensions as Extensions.Rebus, Extensions.Markup
 Extensions = enum(
-    Rebus=b'GRBS',             # grid of rebus indices: 0 for non-rebus; i+1 for key i into RebusSolutions map
-    RebusSolutions=b'RTBL',    # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
-    RebusFill=b'RUSR',         # user's rebus entries
-    Timer=b'LTIM',             # timer state: 'a,b' where a is the number of seconds elapsed and b is a boolean (0,1) for whether the timer is running
-    Markup=b'GEXT')            # grid cell markup: previously incorrect: 0x10; currently incorrect: 0x20, hinted: 0x40, circled: 0x80
+    # grid of rebus indices: 0 for non-rebus;
+    # i+1 for key i into RebusSolutions map
+    Rebus=b'GRBS',
+    # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
+    RebusSolutions=b'RTBL',
+    # user's rebus entries
+    RebusFill=b'RUSR',
+    # timer state: 'a,b' where a is the number of seconds elapsed and
+    # b is a boolean (0,1) for whether the timer is running
+    Timer=b'LTIM',
+    # grid cell markup: previously incorrect: 0x10;
+    # currently incorrect: 0x20,
+    # hinted: 0x40,
+    # circled: 0x80
+    Markup=b'GEXT'
+)
 
 
 def read(filename):
-    """Read a .puz file and return the Puzzle object
-    throws PuzzleFormatError if there's any problem with the file format
+    """
+    Read a .puz file and return the Puzzle object.
+    throws PuzzleFormatError if there's any problem with the file format.
     """
     with open(filename, 'rb') as f:
         return load(f.read())
 
 
 def load(data):
-    """Read .puz file data and return the Puzzle object
-    throws PuzzleFormatError if there's any problem with the file format
+    """
+    Read .puz file data and return the Puzzle object.
+    throws PuzzleFormatError if there's any problem with the file format.
     """
     puz = Puzzle()
     puz.load(data)
@@ -81,8 +104,9 @@ def load(data):
 
 
 class PuzzleFormatError(Exception):
-    """Indicates a format error in the .puz file
-    May be thrown due to invalid headers, invalid checksum validation, or other format issues
+    """
+    Indicates a format error in the .puz file. May be thrown due to
+    invalid headers, invalid checksum validation, or other format issues.
     """
     def __init__(self, message=''):
         self.message = message
@@ -112,7 +136,8 @@ class Puzzle:
         self.clues = []
         self.notes = ''
         self.extensions = {}
-        self._extensions_order = []  # so that we can round-trip values in order
+        # the folowing is so that we can round-trip values in order:
+        self._extensions_order = []
         self.puzzletype = PuzzleType.Normal
         self.solution_state = SolutionState.Unlocked
         self.helpers = {}  # add-ons like Rebus and Markup
@@ -120,8 +145,8 @@ class Puzzle:
     def load(self, data):
         s = PuzzleBuffer(data)
 
-        # advance to start - files may contain some data before the start of the puzzle
-        # use the ACROSS&DOWN magic string as a waypoint
+        # advance to start - files may contain some data before the
+        # start of the puzzle use the ACROSS&DOWN magic string as a waypoint
         # save the preamble for round-tripping
         if not s.seek_to(ACROSSDOWN.encode(ENCODING), -2):
             raise PuzzleFormatError("Data does not appear to represent a "
@@ -168,7 +193,8 @@ class Puzzle:
             # save the codes in order for round-tripping
             self._extensions_order.append(code)
 
-        # sometimes there's some extra garbage at the end of the file, usually \r\n
+        # sometimes there's some extra garbage at
+        # the end of the file, usually \r\n
         if s.can_read():
             self.postscript = s.read_to_end()
 
@@ -180,7 +206,9 @@ class Puzzle:
             raise PuzzleFormatError('magic checksum does not match')
         for code, cksum_ext in ext_cksum.items():
             if cksum_ext != data_cksum(self.extensions[code]):
-                raise PuzzleFormatError('extension %s checksum does not match' % code)
+                raise PuzzleFormatError(
+                    'extension %s checksum does not match' % code
+                )
 
     def save(self, filename):
         with open(filename, 'wb') as f:
@@ -223,7 +251,8 @@ class Puzzle:
         for code in self._extensions_order:
             data = ext.pop(code, None)
             if data:
-                s.pack(EXTENSION_HEADER_FORMAT, code, len(data), data_cksum(data))
+                s.pack(EXTENSION_HEADER_FORMAT, code,
+                       len(data), data_cksum(data))
                 s.write(data + b'\0')
 
         for code, data in ext.items():
@@ -256,7 +285,8 @@ class Puzzle:
 
     def unlock_solution(self, key):
         if self.is_solution_locked():
-            unscrambled = unscramble_solution(self.solution, self.width, self.height, key)
+            unscrambled = unscramble_solution(self.solution,
+                                              self.width, self.height, key)
             if not self.check_answers(unscrambled):
                 return False
 
@@ -270,14 +300,17 @@ class Puzzle:
     def lock_solution(self, key):
         if not self.is_solution_locked():
             # set the scrambled bit and cksum
-            self.scrambled_cksum = scrambled_cksum(self.solution, self.width, self.height)
+            self.scrambled_cksum = scrambled_cksum(self.solution,
+                                                   self.width, self.height)
             self.solution_state = SolutionState.Locked
-            scrambled = scramble_solution(self.solution, self.width, self.height, key)
+            scrambled = scramble_solution(self.solution,
+                                          self.width, self.height, key)
             self.solution = scrambled
 
     def check_answers(self, fill):
         if self.is_solution_locked():
-            return scrambled_cksum(fill, self.width, self.height) == self.scrambled_cksum
+            scrambled = scrambled_cksum(fill, self.width, self.height)
+            return scrambled == self.scrambled_cksum
         else:
             return fill == self.solution
 
@@ -326,8 +359,12 @@ class Puzzle:
         cksum_magic = 0
         for (i, cksum) in enumerate(reversed(cksums)):
             cksum_magic <<= 8
-            cksum_magic |= (ord(MASKSTRING[len(cksums) - i - 1]) ^ (cksum & 0x00ff))
-            cksum_magic |= (ord(MASKSTRING[len(cksums) - i - 1 + 4]) ^ (cksum >> 8)) << 32
+            cksum_magic |= (
+                ord(MASKSTRING[len(cksums) - i - 1]) ^ (cksum & 0x00ff)
+            )
+            cksum_magic |= (
+                (ord(MASKSTRING[len(cksums) - i - 1 + 4]) ^ (cksum >> 8)) << 32
+            )
 
         return cksum_magic
 
@@ -467,11 +504,20 @@ class Rebus:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse rebus data
-        self.table = parse_bytes(self.puzzle.extensions.get(Extensions.Rebus, b''))
-        solutions_str = self.puzzle.extensions.get(Extensions.RebusSolutions, b'').decode(ENCODING)
-        fill_str = self.puzzle.extensions.get(Extensions.RebusFill, b'').decode(ENCODING)
-        self.solutions = {int(item[0]): item[1] for item in parse_dict(solutions_str).items()}
-        self.fill = {int(item[0]): item[1] for item in parse_dict(fill_str).items()}
+        rebus_data = self.puzzle.extensions.get(Extensions.Rebus, b'')
+        self.table = parse_bytes(rebus_data)
+        r_sol_data = self.puzzle.extensions.get(Extensions.RebusSolutions, b'')
+        solutions_str = r_sol_data.decode(ENCODING)
+        fill_data = self.puzzle.extensions.get(Extensions.RebusFill, b'')
+        fill_str = fill_data.decode(ENCODING)
+        self.solutions = {
+            int(item[0]): item[1]
+            for item in parse_dict(solutions_str).items()
+        }
+        self.fill = {
+            int(item[0]): item[1]
+            for item in parse_dict(fill_str).items()
+        }
 
     def has_rebus(self):
         return Extensions.Rebus in self.puzzle.extensions
@@ -483,10 +529,14 @@ class Rebus:
         return [i for i, b in enumerate(self.table) if b]
 
     def get_rebus_solution(self, index):
-        return self.solutions[self.table[index] - 1] if self.is_rebus_square(index) else None
+        if self.is_rebus_square(index):
+            return self.solutions[self.table[index] - 1]
+        return None
 
     def get_rebus_fill(self, index):
-        return self.fill[self.table[index] - 1] if self.is_rebus_square(index) else None
+        if self.is_rebus_square(index):
+            return self.fill[self.table[index] - 1]
+        return None
 
     def set_rebus_fill(self, index, value):
         if self.is_rebus_square(index):
@@ -506,7 +556,8 @@ class Markup:
     def __init__(self, puzzle):
         self.puzzle = puzzle
         # parse markup data
-        self.markup = parse_bytes(self.puzzle.extensions.get(Extensions.Markup, b''))
+        markup_data = self.puzzle.extensions.get(Extensions.Markup, b'')
+        self.markup = parse_bytes(markup_data)
 
     def has_markup(self):
         return any(bool(b) for b in self.markup)
@@ -541,7 +592,8 @@ def data_cksum(data, cksum=0):
 
 def scramble_solution(solution, width, height, key):
     sq = square(solution, width, height)
-    return square(restore(sq, scramble_string(sq.replace(BLACKSQUARE, ''), key)), height, width)
+    data = restore(sq, scramble_string(sq.replace(BLACKSQUARE, ''), key))
+    return square(data, height, width)
 
 
 def scramble_string(s, key):
@@ -559,7 +611,7 @@ def scramble_string(s, key):
     """
     key = key_digits(key)
     for k in key:          # foreach digit in the key
-        s = shift(s, key)  # xform each char by each digit in the key in sequence
+        s = shift(s, key)  # for each char by each digit in the key in sequence
         s = s[k:] + s[:k]  # cut the sequence around the key digit
         s = shuffle(s)     # do a 1:1 shuffle of the 'deck'
 
@@ -569,7 +621,8 @@ def scramble_string(s, key):
 def unscramble_solution(scrambled, width, height, key):
     # width and height are reversed here
     sq = square(scrambled, width, height)
-    return square(restore(sq, unscramble_string(sq.replace(BLACKSQUARE, ''), key)), height, width)
+    data = restore(sq, unscramble_string(sq.replace(BLACKSQUARE, ''), key))
+    return square(data, height, width)
 
 
 def unscramble_string(s, key):
@@ -594,12 +647,17 @@ def key_digits(key):
 
 def square(data, w, h):
     aa = [data[i:i+w] for i in range(0, len(data), w)]
-    return ''.join([''.join([aa[r][c] for r in range(0, h)]) for c in range(0, w)])
+    return ''.join(
+        [''.join([aa[r][c] for r in range(0, h)]) for c in range(0, w)]
+    )
 
 
 def shift(s, key):
     atoz = string.ascii_uppercase
-    return ''.join(atoz[(atoz.index(c) + key[i % len(key)]) % len(atoz)] for i, c in enumerate(s))
+    return ''.join(
+        atoz[(atoz.index(c) + key[i % len(key)]) % len(atoz)]
+        for i, c in enumerate(s)
+    )
 
 
 def unshift(s, key):
