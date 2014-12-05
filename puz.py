@@ -39,7 +39,8 @@ def enum(**enums):
 
 PuzzleType = enum(
     Normal=0x0001,
-    Diagramless=0x0401)
+    Diagramless=0x0401
+)
 
 # the following diverges from the documentation
 # but works for the files I've tested
