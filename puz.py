@@ -5,6 +5,16 @@ import string
 import struct
 import sys
 
+__title__ = 'puzpy'
+__version__ = '0.2.1'
+__author__ = 'Alex DeJarnatt'
+__author_email__ = 'adejarnatt@gmail.com'
+__maintainer__ = 'Simeon Visser'
+__maintainer_email__ = 'simeonvisser@gmail.com'
+__license__ = 'MIT'
+__copyright__ = 'Copyright 2009 Alex DeJarnatt'
+
+
 PY3 = sys.version_info[0] >= 3
 
 if PY3:

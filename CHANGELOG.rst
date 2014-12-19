@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.2.1 (December 19, 2014)
+-------------------------
+* Added version string to puz module for version detection.
+
 0.2 (December 19, 2014)
 -----------------------
 
