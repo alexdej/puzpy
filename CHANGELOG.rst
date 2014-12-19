@@ -1,8 +1,8 @@
 Changelog
 =========
 
-0.2
----
+0.2 (December 19, 2014)
+-----------------------
 
 * Added support for Python 3.2+.
 * Fixed issue where tests were not added properly to TestSuite.
