@@ -521,14 +521,14 @@ class Rebus:
         solutions_str = r_sol_data.decode(ENCODING)
         fill_data = self.puzzle.extensions.get(Extensions.RebusFill, b'')
         fill_str = fill_data.decode(ENCODING)
-        self.solutions = {
-            int(item[0]): item[1]
+        self.solutions = dict(
+			(int(item[0]),item[1])
             for item in parse_dict(solutions_str).items()
-        }
-        self.fill = {
-            int(item[0]): item[1]
+        )
+        self.fill = dict(
+            (int(item[0]),item[1])
             for item in parse_dict(fill_str).items()
-        }
+        )
 
     def has_rebus(self):
         return Extensions.Rebus in self.puzzle.extensions
