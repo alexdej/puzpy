@@ -522,7 +522,7 @@ class Rebus:
         fill_data = self.puzzle.extensions.get(Extensions.RebusFill, b'')
         fill_str = fill_data.decode(ENCODING)
         self.solutions = dict(
-			(int(item[0]),item[1])
+            (int(item[0]),item[1])
             for item in parse_dict(solutions_str).items()
         )
         self.fill = dict(
