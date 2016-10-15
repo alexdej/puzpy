@@ -15,9 +15,10 @@ class PuzzleTests(unittest.TestCase):
 
     def test_extensions(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
-        self.assertIn(puz.Extensions.Rebus, p.extensions)
-        self.assertIn(puz.Extensions.RebusSolutions, p.extensions)
-        self.assertIn(puz.Extensions.Markup, p.extensions)
+        # We don't use assertIn for compatibility with Python 2.6
+        self.assertTrue(puz.Extensions.Rebus in p.extensions)
+        self.assertTrue(puz.Extensions.RebusSolutions in p.extensions)
+        self.assertTrue(puz.Extensions.Markup in p.extensions)
 
     def test_rebus(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
@@ -62,8 +63,7 @@ class PuzzleTests(unittest.TestCase):
 
     def test_empty_puzzle(self):
         p = puz.Puzzle()
-        with self.assertRaises(puz.PuzzleFormatError):
-            p.load(b'')
+        self.assertRaises(puz.PuzzleFormatError, p.load, b'')
 
     def test_junk_at_end_of_puzzle(self):
         with open('testfiles/washpost.puz', 'rb') as fp:
@@ -105,7 +105,8 @@ class LockTests(unittest.TestCase):
         self.assertTrue(p.is_solution_locked())  # still locked
         self.assertTrue(p.unlock_solution(7844))
         self.assertFalse(p.is_solution_locked())  # unlocked!
-        self.assertIn('LAKEONTARIO', p.solution)
+        # We don't use assertIn for compatibility with Python 2.6
+        self.assertTrue('LAKEONTARIO' in p.solution)
 
     def test_unlock_relock(self):
         with open('testfiles/nyt_locked.puz', 'rb') as fp:
