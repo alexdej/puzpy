@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.2.2 (October 24, 2016)
+------------------------
+* Added support for Python 2.6
+
 0.2.1 (December 19, 2014)
 -------------------------
 * Added version string to puz module for version detection.
