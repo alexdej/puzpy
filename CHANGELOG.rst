@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.2.3 (October 24, 2016)
+------------------------
+* Incremented version number as needed for for PyPI.
+
 0.2.2 (October 24, 2016)
 ------------------------
 * Added support for Python 2.6
