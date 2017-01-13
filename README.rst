@@ -6,53 +6,43 @@ Examples
 --------
 ##### Load a puzzle file
 
-```
-import puz
-p = puz.read('testfiles/washpost.puz')
-```
+  import puz
+  p = puz.read('testfiles/washpost.puz')
 
 ##### Print clues with answers
 
-```
-numbering = p.clue_numbering()
+  numbering = p.clue_numbering()
 
-print 'Across'
-for clue in numbering.across:
-  answer = ''.join(
-    p.solution[clue['cell'] + i]
-    for i in range(clue['len']))
-  print clue['num'], clue['clue'], '-', answer
+  print 'Across'
+  for clue in numbering.across:
+      answer = ''.join(
+          p.solution[clue['cell'] + i]
+          for i in range(clue['len']))
+      print clue['num'], clue['clue'], '-', answer
 
-print 'Down'
-for clue in numbering.down:
-  answer = ''.join(
-    p.solution[clue['cell'] + i * numbering.width]
-    for i in range(clue['len']))
-  print clue['num'], clue['clue'], '-', answer
-```
+  print 'Down'
+  for clue in numbering.down:
+      answer = ''.join(
+          p.solution[clue['cell'] + i * numbering.width]
+          for i in range(clue['len']))
+      print clue['num'], clue['clue'], '-', answer
 
 ##### Print the grid
 
-```
-for row in range(p.height):
-  cell = row * p.width
-  # Substitute p.solution for p.fill to print the answers
-  print ' '.join(p.fill[cell:cell + p.width])
-```
+  for row in range(p.height):
+      cell = row * p.width
+      # Substitute p.solution for p.fill to print the answers
+      print ' '.join(p.fill[cell:cell + p.width])
 
 ##### Unlock a scrambled solution
 
-```
-p.unlock_solution(7844)
-# p.solution is unscambled
-```
+    p.unlock_solution(7844)
+    # p.solution is unscambled
 
 ##### Save a puzzle with modifications
 
-```
-p.fill = 'LAMB' + p.fill[4:]
-p.save('mine.puz')
-```
+    p.fill = 'LAMB' + p.fill[4:]
+    p.save('mine.puz')
 
 Notes
 -----
