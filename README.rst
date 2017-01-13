@@ -5,12 +5,14 @@ Implementation of .puz crossword puzzle file parser based on .puz file format do
 Examples
 --------
 ##### Load a puzzle file
+
 ```
 import puz
 p = puz.read('testfiles/washpost.puz')
 ```
 
 ##### Print clues with answers
+
 ```
 numbering = p.clue_numbering()
 
@@ -30,6 +32,7 @@ for clue in numbering.down:
 ```
 
 ##### Print the grid
+
 ```
 for row in range(p.height):
   cell = row * p.width
@@ -38,12 +41,14 @@ for row in range(p.height):
 ```
 
 ##### Unlock a scrambled solution
+
 ```
 p.unlock_solution(7844)
 # p.solution is unscambled
 ```
 
 ##### Save a puzzle with modifications
+
 ```
 p.fill = 'LAMB' + p.fill[4:]
 p.save('mine.puz')
