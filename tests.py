@@ -1,3 +1,5 @@
+# -*- encoding: utf-8 -*-
+
 import glob
 import os
 import sys
@@ -71,6 +73,33 @@ class PuzzleTests(unittest.TestCase):
         p = puz.Puzzle()
         p.load(data)
         self.assertEqual(p.postscript, b'\r\n\r\n')
+
+    def test_unicode(self):
+        '''Load a v2.0 puzzle; check that its emoji were decoded as UTF-8.'''
+        p = puz.read('testfiles/unicode.puz')
+        self.assertEqual(
+            p.title,
+            u'\u2694\ufe0f')
+        self.assertEqual(
+            p.clues[0],
+            u'\U0001f486\U0001f3fb\u200d\u2642\ufe0f')
+
+    def test_upgrade(self):
+        '''Upgrade a v1.3 puzzle to v2.0.
+
+        The NYT diagramless puzzle has some non-ASCII characters, which should
+        be read as ISO-8859-1 from the v1.3 file and written as UTF-8 in the
+        v2.0 file. Either one should decode equivalently.'''
+        with open('testfiles/nyt_diagramless.puz', 'rb') as f:
+            p13_data = f.read()
+        p13 = puz.load(p13_data)
+        p13.version = (2, 0, b'\0')
+        p20_data = p13.tobytes()
+        p20 = puz.load(p20_data)
+
+        self.assertIn(u'Folies-Bergère'.encode('ISO-8859-1'), p13_data)
+        self.assertIn(u'Folies-Bergère'.encode('UTF-8'), p20_data)
+        self.assertEqual(p13.clues, p20.clues)
 
 
 class LockTests(unittest.TestCase):

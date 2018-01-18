@@ -36,9 +36,7 @@ EXTENSION_HEADER_FORMAT = '< 4s  H H '
 
 MASKSTRING = 'ICHEATED'
 
-ENCODING = 'ISO-8859-1'
-
-ACROSSDOWN = 'ACROSS&DOWN'
+ACROSSDOWN = b'ACROSS&DOWN'
 
 BLACKSQUARE = '.'
 
@@ -136,8 +134,7 @@ class Puzzle:
         self.copyright = ''
         self.width = 0
         self.height = 0
-        self.version = b'1.3'
-        self.fileversion = b'1.3\0'  # default
+        self.version = (2, 0, '\0')
         # these are bytes that might be unused
         self.unk1 = b'\0' * 2
         self.unk2 = b'\0' * 12
@@ -154,12 +151,12 @@ class Puzzle:
         self.helpers = {}  # add-ons like Rebus and Markup
 
     def load(self, data):
-        s = PuzzleBuffer(data)
+        s = PuzzleBuffer(self, data)
 
         # advance to start - files may contain some data before the
         # start of the puzzle use the ACROSS&DOWN magic string as a waypoint
         # save the preamble for round-tripping
-        if not s.seek_to(ACROSSDOWN.encode(ENCODING), -2):
+        if not s.seek_to(ACROSSDOWN, -2):
             raise PuzzleFormatError("Data does not appear to represent a "
                                     "puzzle. Are you sure you didn't intend "
                                     "to use read?")
@@ -171,7 +168,7 @@ class Puzzle:
         # acrossDown = puzzle_data[1]
         cksum_hdr = puzzle_data[2]
         cksum_magic = puzzle_data[3]
-        self.fileversion = puzzle_data[4]
+        fileversion = puzzle_data[4]
         # since we don't know the role of these bytes, just round-trip them
         self.unk1 = puzzle_data[5]
         self.scrambled_cksum = puzzle_data[6]
@@ -182,9 +179,10 @@ class Puzzle:
         self.puzzletype = puzzle_data[11]
         self.solution_state = puzzle_data[12]
 
-        self.version = self.fileversion[:3]
-        self.solution = s.read(self.width * self.height).decode(ENCODING)
-        self.fill = s.read(self.width * self.height).decode(ENCODING)
+        self.version = tuple(map(int, fileversion[:3].split(b'.'))) + (
+                fileversion[3:],)
+        self.solution = s.read(self.width * self.height).decode(self.encoding)
+        self.fill = s.read(self.width * self.height).decode(self.encoding)
 
         self.title = s.read_string()
         self.author = s.read_string()
@@ -226,7 +224,7 @@ class Puzzle:
             f.write(self.tobytes())
 
     def tobytes(self):
-        s = PuzzleBuffer()
+        s = PuzzleBuffer(self)
         # commit any changes from helpers
         for h in self.helpers.values():
             if 'save' in dir(h):
@@ -235,15 +233,16 @@ class Puzzle:
         # include any preamble text we might have found on read
         s.write(self.preamble)
 
+        fileversion = (b'%d.%d' % self.version[:2]) + self.version[2]
         s.pack(HEADER_FORMAT,
-               self.global_cksum(), ACROSSDOWN.encode(ENCODING),
+               self.global_cksum(), ACROSSDOWN,
                self.header_cksum(), self.magic_cksum(),
-               self.fileversion, self.unk1, self.scrambled_cksum,
+               fileversion, self.unk1, self.scrambled_cksum,
                self.unk2, self.width, self.height,
                len(self.clues), self.puzzletype, self.solution_state)
 
-        s.write(self.solution.encode(ENCODING))
-        s.write(self.fill.encode(ENCODING))
+        s.write(self.solution.encode(self.encoding))
+        s.write(self.fill.encode(self.encoding))
 
         s.write_string(self.title)
         s.write_string(self.author)
@@ -270,7 +269,7 @@ class Puzzle:
             s.pack(EXTENSION_HEADER_FORMAT, code, len(data), data_cksum(data))
             s.write(data + b'\0')
 
-        s.write(self.postscript.encode(ENCODING))
+        s.write(self.postscript.encode(self.encoding))
 
         return s.tobytes()
 
@@ -311,7 +310,7 @@ class Puzzle:
     def lock_solution(self, key):
         if not self.is_solution_locked():
             # set the scrambled bit and cksum
-            self.scrambled_cksum = scrambled_cksum(self.solution,
+            self.scrambled_cksum = scrambled_cksum(self.solution, self.encoding,
                                                    self.width, self.height)
             self.solution_state = SolutionState.Locked
             scrambled = scramble_solution(self.solution,
@@ -320,10 +319,16 @@ class Puzzle:
 
     def check_answers(self, fill):
         if self.is_solution_locked():
-            scrambled = scrambled_cksum(fill, self.width, self.height)
+            scrambled = scrambled_cksum(fill, self.encoding, self.width, self.height)
             return scrambled == self.scrambled_cksum
         else:
             return fill == self.solution
+
+    @property
+    def encoding(self):
+        if self.version < (2, 0):
+            return 'ISO-8859-1'
+        return 'UTF-8'
 
     def header_cksum(self, cksum=0):
         return data_cksum(struct.pack(HEADER_CKSUM_FORMAT,
@@ -335,26 +340,26 @@ class Puzzle:
         # null termination, followed by all non-empty clues without null
         # termination, followed by notes (but only for version 1.3)
         if self.title:
-            cksum = data_cksum(self.title.encode(ENCODING) + b'\0', cksum)
+            cksum = data_cksum(self.title.encode(self.encoding) + b'\0', cksum)
         if self.author:
-            cksum = data_cksum(self.author.encode(ENCODING) + b'\0', cksum)
+            cksum = data_cksum(self.author.encode(self.encoding) + b'\0', cksum)
         if self.copyright:
-            cksum = data_cksum(self.copyright.encode(ENCODING) + b'\0', cksum)
+            cksum = data_cksum(self.copyright.encode(self.encoding) + b'\0', cksum)
 
         for clue in self.clues:
             if clue:
-                cksum = data_cksum(clue.encode(ENCODING), cksum)
+                cksum = data_cksum(clue.encode(self.encoding), cksum)
 
         # notes included in global cksum only in v1.3 of format
-        if self.version.decode(ENCODING) == '1.3' and self.notes:
-            cksum = data_cksum(self.notes.encode(ENCODING) + b'\0', cksum)
+        if self.version >= (1, 3) and self.notes:
+            cksum = data_cksum(self.notes.encode(self.encoding) + b'\0', cksum)
 
         return cksum
 
     def global_cksum(self):
         cksum = self.header_cksum()
-        cksum = data_cksum(self.solution.encode(ENCODING), cksum)
-        cksum = data_cksum(self.fill.encode(ENCODING), cksum)
+        cksum = data_cksum(self.solution.encode(self.encoding), cksum)
+        cksum = data_cksum(self.fill.encode(self.encoding), cksum)
         cksum = self.text_cksum(cksum)
         # extensions do not seem to be included in global cksum
         return cksum
@@ -362,8 +367,8 @@ class Puzzle:
     def magic_cksum(self):
         cksums = [
             self.header_cksum(),
-            data_cksum(self.solution.encode(ENCODING)),
-            data_cksum(self.fill.encode(ENCODING)),
+            data_cksum(self.solution.encode(self.encoding)),
+            data_cksum(self.fill.encode(self.encoding)),
             self.text_cksum()
         ]
 
@@ -385,8 +390,9 @@ class PuzzleBuffer:
     wraps a data buffer ('' or []) and provides .puz-specific methods for
     reading and writing data
     """
-    def __init__(self, data=None):
+    def __init__(self, puzzle, data=None):
         self.data = data or []
+        self.puzzle = puzzle
         self.pos = 0
 
     def can_read(self, n_bytes=1):
@@ -411,7 +417,7 @@ class PuzzleBuffer:
     def read_until(self, c):
         start = self.pos
         self.seek_to(c, 1)  # read past
-        return str(self.data[start:self.pos-1], ENCODING)
+        return str(self.data[start:self.pos-1], self.puzzle.encoding)
 
     def seek_to(self, s, offset=0):
         try:
@@ -427,7 +433,7 @@ class PuzzleBuffer:
 
     def write_string(self, s):
         s = s or ''
-        self.data.append(s.encode(ENCODING) + b'\0')
+        self.data.append(s.encode(self.puzzle.encoding) + b'\0')
 
     def pack(self, struct_format, *values):
         self.data.append(struct.pack(struct_format, *values))
@@ -518,9 +524,9 @@ class Rebus:
         rebus_data = self.puzzle.extensions.get(Extensions.Rebus, b'')
         self.table = parse_bytes(rebus_data)
         r_sol_data = self.puzzle.extensions.get(Extensions.RebusSolutions, b'')
-        solutions_str = r_sol_data.decode(ENCODING)
+        solutions_str = r_sol_data.decode(self.puzzle.encoding)
         fill_data = self.puzzle.extensions.get(Extensions.RebusFill, b'')
-        fill_str = fill_data.decode(ENCODING)
+        fill_str = fill_data.decode(self.puzzle.encoding)
         self.solutions = dict(
             (int(item[0]),item[1])
             for item in parse_dict(solutions_str).items()
@@ -557,9 +563,9 @@ class Rebus:
         if self.has_rebus():
             # commit changes back to puzzle.extensions
             self.puzzle.extensions[Extensions.Rebus] = pack_bytes(self.table)
-            rebus_solutions = dict_to_string(self.solutions).encode(ENCODING)
+            rebus_solutions = dict_to_string(self.solutions).encode(self.puzzle.encoding)
             self.puzzle.extensions[Extensions.RebusSolutions] = rebus_solutions
-            rebus_fill = dict_to_string(self.fill).encode(ENCODING)
+            rebus_fill = dict_to_string(self.fill).encode(self.puzzle.encoding)
             self.puzzle.extensions[Extensions.RebusFill] = rebus_fill
 
 
@@ -647,9 +653,9 @@ def unscramble_string(s, key):
     return s
 
 
-def scrambled_cksum(scrambled, width, height):
+def scrambled_cksum(scrambled, encoding, width, height):
     data = square(scrambled, width, height).replace(BLACKSQUARE, '')
-    return data_cksum(data.encode(ENCODING))
+    return data_cksum(data.encode(encoding))
 
 
 def key_digits(key):
