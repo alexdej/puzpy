@@ -1,5 +1,6 @@
 ﻿import functools
 import operator
+import os
 import math
 import string
 import struct
@@ -97,20 +98,27 @@ Extensions = enum(
 
 def read(filename):
     """
-    Read a .puz file and return the Puzzle object.
+    Read a .puz or .txt file and return the Puzzle object.
     throws PuzzleFormatError if there's any problem with the file format.
     """
+    _, file_extension = os.path.splitext(filename)
     with open(filename, 'rb') as f:
-        return load(f.read())
+        return load(file_extension, f.read())
 
 
-def load(data):
+def load(file_extension, data):
     """
-    Read .puz file data and return the Puzzle object.
+    Read .puz or .txt file data and return the Puzzle object.
     throws PuzzleFormatError if there's any problem with the file format.
     """
     puz = Puzzle()
-    puz.load(data)
+    if file_extension == '.puz':
+        puz.load(data)
+    elif file_extension == '.txt':
+        puz.load_txt(data)
+    else:
+        raise PuzzleFormatError("File extension " + file_extension +
+                                " is not one of .puz/.txt")
     return puz
 
 
@@ -220,6 +228,121 @@ class Puzzle:
                 raise PuzzleFormatError(
                     'extension %s checksum does not match' % code
                 )
+
+    def load_txt(self, data):
+        s = PuzzleBuffer(data)
+
+        tag_across_puzzle = s.read_text_line()
+        if tag_across_puzzle != '<ACROSS PUZZLE>':
+            raise PuzzleFormatError('missing <ACROSS PUZZLE> tag')
+
+        tag_title = s.read_text_line()
+        if tag_title != '<TITLE>':
+            raise PuzzleFormatError('missing <TITLE> tag')
+        self.title = s.read_text_line()
+
+        tag_author = s.read_text_line()
+        if tag_author != '<AUTHOR>':
+            raise PuzzleFormatError('missing <AUTHOR> tag')
+        self.author = s.read_text_line()
+
+        tag_copyright = s.read_text_line()
+        if tag_copyright != '<COPYRIGHT>':
+            raise PuzzleFormatError('missing <COPYRIGHT> tag')
+        self.copyright = s.read_text_line()
+
+        tag_size = s.read_text_line()
+        if tag_size != '<SIZE>':
+            raise PuzzleFormatError('missing <SIZE> tag')
+        dimensions = s.read_text_line().split('x')
+        if len(dimensions) != 2:
+            raise PuzzleFormatError('Malformed WxH')
+        self.width = int(dimensions[0])
+        self.height = int(dimensions[1])
+
+        tag_grid = s.read_text_line()
+        if tag_grid != '<GRID>':
+            raise PuzzleFormatError('missing <GRID> tag')
+
+        for row in range(self.height):
+            solution_line = s.read_text_line()
+            if len(solution_line) != self.width:
+                raise PuzzleFormatError('Solution line width should be %d got %d' & (self.width, len(solution_lne)))
+            if solution_line.strip(string.ascii_uppercase + '.') != '':
+                raise PuzzleFormatError('Solution line has non-[A-Z.] chars: ' + solution_line)
+            self.solution = self.solution + solution_line
+            for col in range(self.width):
+                if solution_line[col] == '.':
+                    self.fill = self.fill + '.'
+                else:
+                    self.fill = self.fill + '-'
+ 
+        tag_across = s.read_text_line()
+        if tag_across != '<ACROSS>':
+            raise PuzzleFormatError('missing <ACROSS> tag')
+
+        across_clues = []
+        down_clues = []
+        in_across_clues = True
+
+        while s.can_read():
+            line = s.read_text_line()
+            if line == '<DOWN>':
+                in_across_clues = False
+            elif line == '<NOTEPAD>':
+                self.notes = s.read_string()
+                break
+            else:
+                if in_across_clues:
+                    across_clues.append(line)
+                else:
+                    down_clues.append(line)
+
+        # The clues in the .txt file are listed as all Across clues followed by all Down clues.
+        # The self.clues list has to be in numerical clue order (with Across before Down if a
+        # square starts both an Across clue and a Down clue.
+
+        across_index = 0
+        down_index = 0
+        for row in range(self.height):
+            for col in range(self.width):
+                if self.starts_across_clue(row, col):
+                    if across_index >= len(across_clues):
+                        raise PuzzleFormatError('not enough Across clues')
+                    self.clues.append(across_clues[across_index])
+                    across_index = across_index + 1
+                if self.starts_down_clue(row, col):
+                    if down_index >= len(down_clues):
+                        raise PuzzleFormatError('not enough Down clues')
+                    self.clues.append(down_clues[down_index])
+                    down_index = down_index + 1
+        if across_index != len(across_clues):
+            raise PuzzleFormatError('mismatch in number of Across clues')
+        if down_index != len(down_clues):
+            raise PuzzleFormatError('mismatch in number of Down clues')
+
+
+    def starts_across_clue(self, row, col):
+        if col == self.width - 1:
+            return False
+        index = row * self.width + col
+        if self.solution[index] == '.':
+            return False
+        if col == 0:
+            return col + 1 < self.width and self.solution[index + 1] != '.'
+        else:
+            return self.solution[index - 1] == '.' and self.solution[index + 1] != '.'
+
+    def starts_down_clue(self, row, col):
+        if row == self.height - 1:
+            return False
+        index = row * self.width + col
+        if self.solution[index] == '.':
+            return False
+        if row == 0:
+            return row + 1 < self.height and self.solution[index + self.width] != '.'
+        else:
+            return self.solution[index - self.width] == '.' and self.solution[index + self.width] != '.'
 
     def save(self, filename):
         with open(filename, 'wb') as f:
@@ -412,6 +535,10 @@ class PuzzleBuffer:
         start = self.pos
         self.seek_to(c, 1)  # read past
         return str(self.data[start:self.pos-1], ENCODING)
+
+    def read_text_line(self):
+        s = self.read_until(b'\n')
+        return s.strip()
 
     def seek_to(self, s, offset=0):
         try:

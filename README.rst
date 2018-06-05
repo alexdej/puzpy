@@ -9,6 +9,12 @@ Load a puzzle file::
   import puz
   p = puz.read('testfiles/washpost.puz')
 
+Create a puzzle in the txt format (http://www.litsoft.com/across/docs/AcrossTextFormat.pdf) and convert to .puz::
+
+  import puz
+  p = puz.read('testfiles/txt_puzzle.txt')
+  p.save('/tmp/txt_puzzle.puz')
+
 Print clues with answers::
 
   numbering = p.clue_numbering()
