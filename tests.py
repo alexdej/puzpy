@@ -13,6 +13,11 @@ class PuzzleTests(unittest.TestCase):
         clues = p.clue_numbering()
         self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
 
+    def test_diagramless_clue_numbering(self):
+        p = puz.read('testfiles/nyt_diagramless.puz')
+        clues = p.clue_numbering()
+        self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
+
     def test_extensions(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
         # We don't use assertIn for compatibility with Python 2.6
@@ -80,16 +85,16 @@ class LockTests(unittest.TestCase):
         '''
         self.assertEqual('MLOOPKJ', puz.scramble_string('AEBFCDG', 1234))
         self.assertEqual('MOP..KLOJ',
-                         puz.scramble_solution('ABC..DEFG', 3, 3, 1234))
+                         puz.scramble_solution('ABC..DEFG', 3, 3, 1234, puz.PuzzleType.Normal))
 
         self.assertEqual('AEBFCDG', puz.unscramble_string('MLOOPKJ', 1234))
         self.assertEqual('ABC..DEFG',
-                         puz.unscramble_solution('MOP..KLOJ', 3, 3, 1234))
+                         puz.unscramble_solution('MOP..KLOJ', 3, 3, 1234, puz.PuzzleType.Normal))
 
         # rectangular example - tricky
         a = 'ABCD.EFGH.KHIJKLM.NOPW.XYZ'
-        scrambled = puz.scramble_solution(a, 13, 2, 9721)
-        unscrambled = puz.unscramble_solution(scrambled, 13, 2, 9721)
+        scrambled = puz.scramble_solution(a, 13, 2, 9721, puz.PuzzleType.Normal)
+        unscrambled = puz.unscramble_solution(scrambled, 13, 2, 9721, puz.PuzzleType.Normal)
         self.assertEqual(a, unscrambled)
 
     def test_locked_bit(self):

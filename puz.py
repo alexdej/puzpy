@@ -52,6 +52,11 @@ PuzzleType = enum(
     Diagramless=0x0401
 )
 
+BLACKSQUARE_BY_PUZZLETYPE = {
+    PuzzleType.Normal: BLACKSQUARE,
+    PuzzleType.Diagramless: ':'
+}
+
 # the following diverges from the documentation
 # but works for the files I've tested
 SolutionState = enum(
@@ -288,7 +293,8 @@ class Puzzle:
 
     def clue_numbering(self):
         numbering = DefaultClueNumbering(self.fill, self.clues,
-                                         self.width, self.height)
+                                         self.width, self.height,
+                                         self.puzzletype)
         return self.helpers.setdefault('clues', numbering)
 
     def is_solution_locked(self):
@@ -297,7 +303,8 @@ class Puzzle:
     def unlock_solution(self, key):
         if self.is_solution_locked():
             unscrambled = unscramble_solution(self.solution,
-                                              self.width, self.height, key)
+                                              self.width, self.height, key,
+                                              self.puzzletype)
             if not self.check_answers(unscrambled):
                 return False
 
@@ -312,15 +319,18 @@ class Puzzle:
         if not self.is_solution_locked():
             # set the scrambled bit and cksum
             self.scrambled_cksum = scrambled_cksum(self.solution,
-                                                   self.width, self.height)
+                                                   self.width, self.height,
+                                                   self.puzzletype)
             self.solution_state = SolutionState.Locked
             scrambled = scramble_solution(self.solution,
-                                          self.width, self.height, key)
+                                          self.width, self.height, key,
+                                          self.puzzletype)
             self.solution = scrambled
 
     def check_answers(self, fill):
         if self.is_solution_locked():
-            scrambled = scrambled_cksum(fill, self.width, self.height)
+            scrambled = scrambled_cksum(fill, self.width, self.height,
+                                        self.puzzletype)
             return scrambled == self.scrambled_cksum
         else:
             return fill == self.solution
@@ -454,11 +464,12 @@ class PuzzleBuffer:
 # clue numbering helper
 
 class DefaultClueNumbering:
-    def __init__(self, grid, clues, width, height):
+    def __init__(self, grid, clues, width, height, puzzletype=PuzzleType.Normal):
         self.grid = grid
         self.clues = clues
         self.width = width
         self.height = height
+        self.puzzletype = puzzletype
 
         # compute across & down
         a = []
@@ -466,9 +477,9 @@ class DefaultClueNumbering:
         c = 0
         n = 1
         for i in range(0, len(grid)):
-            if not is_blacksquare(grid[i]):
+            if not is_blacksquare(grid[i], self.puzzletype):
                 lastc = c
-                is_across = self.col(i) == 0 or is_blacksquare(grid[i - 1])
+                is_across = self.col(i) == 0 or is_blacksquare(grid[i - 1], self.puzzletype)
                 if is_across and self.len_across(i) > 1:
                     a.append({
                         'num': n,
@@ -477,7 +488,7 @@ class DefaultClueNumbering:
                         'len': self.len_across(i)
                     })
                     c += 1
-                is_down = self.row(i) == 0 or is_blacksquare(grid[i - width])
+                is_down = self.row(i) == 0 or is_blacksquare(grid[i - width], self.puzzletype)
                 if is_down and self.len_down(i) > 1:
                     d.append({
                         'num': n,
@@ -500,13 +511,13 @@ class DefaultClueNumbering:
 
     def len_across(self, index):
         for c in range(0, self.width - self.col(index)):
-            if is_blacksquare(self.grid[index + c]):
+            if is_blacksquare(self.grid[index + c], self.puzzletype):
                 return c
         return c + 1
 
     def len_down(self, index):
         for c in range(0, self.height - self.row(index)):
-            if is_blacksquare(self.grid[index + c*self.width]):
+            if is_blacksquare(self.grid[index + c*self.width], self.puzzletype):
                 return c
         return c + 1
 
@@ -601,9 +612,9 @@ def data_cksum(data, cksum=0):
     return cksum
 
 
-def scramble_solution(solution, width, height, key):
+def scramble_solution(solution, width, height, key, puzzletype=PuzzleType.Normal):
     sq = square(solution, width, height)
-    data = restore(sq, scramble_string(sq.replace(BLACKSQUARE, ''), key))
+    data = restore(sq, scramble_string(sq.replace(BLACKSQUARE_BY_PUZZLETYPE[puzzletype], ''), key), puzzletype)
     return square(data, height, width)
 
 
@@ -629,10 +640,10 @@ def scramble_string(s, key):
     return s
 
 
-def unscramble_solution(scrambled, width, height, key):
+def unscramble_solution(scrambled, width, height, key, puzzletype=PuzzleType.Normal):
     # width and height are reversed here
     sq = square(scrambled, width, height)
-    data = restore(sq, unscramble_string(sq.replace(BLACKSQUARE, ''), key))
+    data = restore(sq, unscramble_string(sq.replace(BLACKSQUARE_BY_PUZZLETYPE[puzzletype], ''), key), puzzletype)
     return square(data, height, width)
 
 
@@ -647,8 +658,8 @@ def unscramble_string(s, key):
     return s
 
 
-def scrambled_cksum(scrambled, width, height):
-    data = square(scrambled, width, height).replace(BLACKSQUARE, '')
+def scrambled_cksum(scrambled, width, height, puzzletype=PuzzleType.Normal):
+    data = square(scrambled, width, height).replace(BLACKSQUARE_BY_PUZZLETYPE[puzzletype], '')
     return data_cksum(data.encode(ENCODING))
 
 
@@ -685,7 +696,7 @@ def unshuffle(s):
     return s[1::2] + s[::2]
 
 
-def restore(s, t):
+def restore(s, t, puzzletype=PuzzleType.Normal):
     """
     s is the source string, it can contain '.'
     t is the target, it's smaller than s by the number of '.'s in s
@@ -697,13 +708,13 @@ def restore(s, t):
     'XYZ.ABC'
     """
     t = (c for c in t)
-    return ''.join(next(t) if not is_blacksquare(c) else c for c in s)
+    return ''.join(next(t) if not is_blacksquare(c, puzzletype) else c for c in s)
 
 
-def is_blacksquare(c):
+def is_blacksquare(c, puzzletype=PuzzleType.Normal):
     if isinstance(c, int):
         c = chr(c)
-    return c == BLACKSQUARE
+    return c == BLACKSQUARE_BY_PUZZLETYPE[puzzletype]
 
 
 #
