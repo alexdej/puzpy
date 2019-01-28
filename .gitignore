@@ -52,3 +52,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# pyenv
+.python-version
+
+# editor files
+*.swp

@@ -129,7 +129,7 @@ class Puzzle:
     def __init__(self):
         """Initializes a blank puzzle
         """
-        self.preamble = ''
+        self.preamble = b''
         self.postscript = ''
         self.title = ''
         self.author = ''

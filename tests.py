@@ -1,6 +1,7 @@
 import glob
 import os
 import sys
+import tempfile
 import unittest
 
 import puz
@@ -71,6 +72,37 @@ class PuzzleTests(unittest.TestCase):
         p = puz.Puzzle()
         p.load(data)
         self.assertEqual(p.postscript, b'\r\n\r\n')
+
+    def test_save_empty_puzzle(self):
+        ''' confirm an empty Puzzle() can be saved to a file '''
+        p = puz.Puzzle()
+        with tempfile.NamedTemporaryFile(suffix='.puz') as tmp:
+            p.save(tmp.name)
+            p2 = puz.read(tmp.name)
+            self.assertEqual(p.puzzletype, p2.puzzletype)
+            self.assertEqual(p.version, p2.version)
+            self.assertEqual(p.scrambled_cksum, p2.scrambled_cksum)
+
+    def test_save_small_puzzle(self):
+        ''' an example of creating a small 3x3 puzzle from scratch and writing
+        to a file
+        '''
+        p = puz.Puzzle()
+        with tempfile.NamedTemporaryFile(suffix='.puz') as tmp:
+            p.title = 'Test Puzzle'
+            p.author = 'Alex'
+            p.height = 3
+            p.width = 3
+            p.solution = 'A' * 9
+            p.clues = ['clue'] * 6
+            p.fill = '-' * 9
+            p.save(tmp.name)
+            p2 = puz.read(tmp.name)
+            self.assertEqual(p.title, p2.title)
+            self.assertEqual(p.author, p2.author)
+            self.assertEqual(p.solution, p2.solution)
+            self.assertEqual(p.clues, p2.clues)
+            self.assertEqual(p.fill, p2.fill)
 
 
 class LockTests(unittest.TestCase):
