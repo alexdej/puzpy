@@ -130,7 +130,7 @@ class Puzzle:
         """Initializes a blank puzzle
         """
         self.preamble = b''
-        self.postscript = ''
+        self.postscript = b''
         self.title = ''
         self.author = ''
         self.copyright = ''
@@ -222,8 +222,9 @@ class Puzzle:
                 )
 
     def save(self, filename):
+        puzzle_bytes = self.tobytes()
         with open(filename, 'wb') as f:
-            f.write(self.tobytes())
+            f.write(puzzle_bytes)
 
     def tobytes(self):
         s = PuzzleBuffer()
@@ -270,7 +271,14 @@ class Puzzle:
             s.pack(EXTENSION_HEADER_FORMAT, code, len(data), data_cksum(data))
             s.write(data + b'\0')
 
-        s.write(self.postscript.encode(ENCODING))
+        # postscript is initialized, read, and stored as bytes. In case it is
+        # overwritten as a string, this try/except converts it back.
+        try:
+            postscript_bytes = self.postscript.encode(ENCODING)
+        except AttributeError:
+            postscript_bytes = self.postscript
+
+        s.write(postscript_bytes)
 
         return s.tobytes()
 
