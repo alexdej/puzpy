@@ -222,8 +222,9 @@ class Puzzle:
                 )
 
     def save(self, filename):
+        puzzle_bytes = self.tobytes()
         with open(filename, 'wb') as f:
-            f.write(self.tobytes())
+            f.write(puzzle_bytes)
 
     def tobytes(self):
         s = PuzzleBuffer()
