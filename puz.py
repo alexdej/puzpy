@@ -481,6 +481,7 @@ class DefaultClueNumbering:
                     a.append({
                         'num': n,
                         'clue': clues[c],
+                        'clue_index': c,
                         'cell': i,
                         'len': self.len_across(i)
                     })
@@ -490,6 +491,7 @@ class DefaultClueNumbering:
                     d.append({
                         'num': n,
                         'clue': clues[c],
+                        'clue_index': c,
                         'cell': i,
                         'len': self.len_down(i)
                     })
