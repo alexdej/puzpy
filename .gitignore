@@ -55,3 +55,8 @@ target/
 
 # pycharm project
 .idea/
+# pyenv
+.python-version
+
+# editor files
+*.swp
