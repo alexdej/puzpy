@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='puzpy',
-    version='0.2.3',
+    version='0.2.4',
     description='python crossword puzzle library',
     author='Alex Dejarnatt',
     author_email='adejarnatt@gmail.com',
@@ -27,6 +27,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Games/Entertainment :: Puzzle Games',
     ],
     keywords='puz crosswords crossword puzzle acrosslite xword xwords'
