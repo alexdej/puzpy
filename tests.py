@@ -73,6 +73,10 @@ class PuzzleTests(unittest.TestCase):
         p.load(data)
         self.assertEqual(p.postscript, b'\r\n\r\n')
 
+    def test_v1_4(self):
+      p = puz.read('testfiles/nyt_v1_4.puz')
+      p.tobytes()
+
     def test_save_empty_puzzle(self):
         ''' confirm an empty Puzzle() can be saved to a file '''
         p = puz.Puzzle()

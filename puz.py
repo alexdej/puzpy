@@ -282,6 +282,9 @@ class Puzzle:
 
         return s.tobytes()
 
+    def version_tuple(self):
+      return tuple(map(int, self.version.decode(ENCODING).split('.')))
+
     def has_rebus(self):
         return self.rebus().has_rebus()
 
@@ -341,7 +344,7 @@ class Puzzle:
     def text_cksum(self, cksum=0):
         # for the checksum to work these fields must be added in order with
         # null termination, followed by all non-empty clues without null
-        # termination, followed by notes (but only for version 1.3)
+        # termination, followed by notes (but only for version >= 1.3)
         if self.title:
             cksum = data_cksum(self.title.encode(ENCODING) + b'\0', cksum)
         if self.author:
@@ -353,8 +356,8 @@ class Puzzle:
             if clue:
                 cksum = data_cksum(clue.encode(ENCODING), cksum)
 
-        # notes included in global cksum only in v1.3 of format
-        if self.version.decode(ENCODING) == '1.3' and self.notes:
+        # notes included in global cksum starting v1.3 of format
+        if self.version_tuple() >= (1,3) and self.notes:
             cksum = data_cksum(self.notes.encode(ENCODING) + b'\0', cksum)
 
         return cksum
