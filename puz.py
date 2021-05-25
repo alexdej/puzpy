@@ -299,7 +299,7 @@ class Puzzle:
 
     def clue_numbering(self):
         numbering = DefaultClueNumbering(self.fill, self.clues,
-                                         self.width, self.height)
+                                         self.width, self.height, self.solution)
         return self.helpers.setdefault('clues', numbering)
 
     def is_solution_locked(self):
@@ -465,8 +465,9 @@ class PuzzleBuffer:
 # clue numbering helper
 
 class DefaultClueNumbering:
-    def __init__(self, grid, clues, width, height):
+    def __init__(self, grid, clues, width, height, solution):
         self.grid = grid
+        self.solution = solution
         self.clues = clues
         self.width = width
         self.height = height
@@ -485,7 +486,8 @@ class DefaultClueNumbering:
                         'num': n,
                         'clue': clues[c],
                         'cell': i,
-                        'len': self.len_across(i)
+                        'len': self.len_across(i),
+                        'entry': self.word_across(i)
                     })
                     c += 1
                 is_down = self.row(i) == 0 or is_blacksquare(grid[i - width])
@@ -494,7 +496,8 @@ class DefaultClueNumbering:
                         'num': n,
                         'clue': clues[c],
                         'cell': i,
-                        'len': self.len_down(i)
+                        'len': self.len_down(i),
+                        'entry': self.word_down(i)
                     })
                     c += 1
                 if c > lastc:
@@ -520,7 +523,30 @@ class DefaultClueNumbering:
             if is_blacksquare(self.grid[index + c*self.width]):
                 return c
         return c + 1
+        
+    def word_across(self, index):
+        entry = ''
+        for c in range(0, self.width - self.col(index)):
+            if is_blacksquare(self.solution[index + c]):
+                if len(entry) > 1:
+                    return entry
+                else:
+                    return ''
+            else:
+                entry += self.solution[index + c]
+        return entry
 
+    def word_down(self, index):
+        entry = ''
+        for c in range(0, self.height - self.row(index)):
+            if is_blacksquare(self.solution[index + c*self.width]):
+                if len(entry) > 1:
+                    return entry
+                else:
+                    return ''
+            else:
+                entry += self.solution[index + c*self.width]
+        return entry
 
 class Rebus:
     def __init__(self, puzzle):
