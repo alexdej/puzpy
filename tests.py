@@ -13,6 +13,13 @@ class PuzzleTests(unittest.TestCase):
         p = puz.read('testfiles/washpost.puz')
         clues = p.clue_numbering()
         self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
+        self.assertTrue(len(p.clues) > 0)
+
+    def test_diagramless_clue_numbering(self):
+        p = puz.read('testfiles/nyt_diagramless.puz')
+        clues = p.clue_numbering()
+        self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
+        self.assertTrue(len(p.clues) > 0)
 
     def test_extensions(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
@@ -162,6 +169,17 @@ class LockTests(unittest.TestCase):
         p1.unlock_solution(7844)
         self.assertTrue(p2.is_solution_locked())
         self.assertTrue(p2.check_answers(p1.solution))
+
+    def test_unlock_relock_diagramless(self):
+        with open('testfiles/nyt_diagramless.puz', 'rb') as fp:
+            orig = fp.read()
+        p = puz.read('testfiles/nyt_diagramless.puz')
+        self.assertTrue(p.is_solution_locked())
+        self.assertTrue(p.unlock_solution(3285))
+        self.assertFalse(p.is_solution_locked())
+        p.lock_solution(3285)
+        new = p.tobytes()
+        self.assertEqual(orig, new, 'nyt_diagramless.puz did not round-trip')
 
 
 class RoundtripPuzfileTests(unittest.TestCase):
