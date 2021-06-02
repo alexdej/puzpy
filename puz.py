@@ -21,8 +21,8 @@ if PY3:
     str = str
     range = range
 else:
-    str = unicode
-    range = xrange
+    str = unicode  # noqa: F821
+    range = xrange  # noqa: F821
 
 HEADER_FORMAT = '''<
              H 11s        xH
@@ -283,7 +283,7 @@ class Puzzle:
         return s.tobytes()
 
     def version_tuple(self):
-      return tuple(map(int, self.version.decode(ENCODING).split('.')))
+        return tuple(map(int, self.version.decode(ENCODING).split('.')))
 
     def has_rebus(self):
         return self.rebus().has_rebus()
@@ -357,7 +357,7 @@ class Puzzle:
                 cksum = data_cksum(clue.encode(ENCODING), cksum)
 
         # notes included in global cksum starting v1.3 of format
-        if self.version_tuple() >= (1,3) and self.notes:
+        if self.version_tuple() >= (1, 3) and self.notes:
             cksum = data_cksum(self.notes.encode(ENCODING) + b'\0', cksum)
 
         return cksum
@@ -533,11 +533,11 @@ class Rebus:
         fill_data = self.puzzle.extensions.get(Extensions.RebusFill, b'')
         fill_str = fill_data.decode(ENCODING)
         self.solutions = dict(
-            (int(item[0]),item[1])
+            (int(item[0]), item[1])
             for item in parse_dict(solutions_str).items()
         )
         self.fill = dict(
-            (int(item[0]),item[1])
+            (int(item[0]), item[1])
             for item in parse_dict(fill_str).items()
         )
 
@@ -649,7 +649,7 @@ def unscramble_solution(scrambled, width, height, key):
 
 def unscramble_string(s, key):
     key = key_digits(key)
-    l = len(s)
+    l = len(s)  # noqa: E741
     for k in key[::-1]:
         s = unshuffle(s)
         s = s[l-k:] + s[:l-k]
