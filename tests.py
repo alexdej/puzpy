@@ -88,6 +88,7 @@ class PuzzleTests(unittest.TestCase):
         p = puz.read('testfiles/unicode.puz')
         # puzzle title contains emoji
         self.assertEqual(p.title, u'\u2694\ufe0f')
+        self.assertEqual(p.encoding, 'UTF-8')
         p.tobytes()
 
     def test_v2_upgrade(self):
@@ -95,6 +96,7 @@ class PuzzleTests(unittest.TestCase):
         p.title = u'\u2694\ufe0f'
         p.version = b'2.0'
         p.fileversion = b'2.0\0'
+        p.encoding = puz.ENCODING_UTF8
         data = p.tobytes()
         p2 = puz.load(data)
         self.assertEqual(p2.title, u'\u2694\ufe0f')

@@ -38,6 +38,7 @@ MASKSTRING = 'ICHEATED'
 
 ENCODING = 'ISO-8859-1'
 ENCODING_UTF8 = 'UTF-8'
+ENCODING_ERRORS = 'strict'  # raises an exception for bad chars; change to 'replace' for laxer handling
 
 ACROSSDOWN = b'ACROSS&DOWN'
 
@@ -140,6 +141,7 @@ class Puzzle:
         self.height = 0
         self.version = b'1.3'
         self.fileversion = b'1.3\0'  # default
+        self.encoding = ENCODING
         # these are bytes that might be unused
         self.unk1 = b'\0' * 2
         self.unk2 = b'\0' * 12
@@ -186,6 +188,7 @@ class Puzzle:
 
         self.version = self.fileversion[:3]
         # Once we have fileversion we can guess the encoding
+        self.encoding = ENCODING if self.version_tuple()[0] < 2 else ENCODING_UTF8
         s.encoding = self.encoding
 
         self.solution = s.read(self.width * self.height).decode(self.encoding)
@@ -248,8 +251,8 @@ class Puzzle:
                self.unk2, self.width, self.height,
                len(self.clues), self.puzzletype, self.solution_state)
 
-        s.write(self.solution.encode(self.encoding))
-        s.write(self.fill.encode(self.encoding))
+        s.write(self.encode(self.solution))
+        s.write(self.encode(self.fill))
 
         s.write_string(self.title)
         s.write_string(self.author)
@@ -279,7 +282,7 @@ class Puzzle:
         # postscript is initialized, read, and stored as bytes. In case it is
         # overwritten as a string, this try/except converts it back.
         try:
-            postscript_bytes = self.postscript.encode(self.encoding)
+            postscript_bytes = self.encode(self.postscript)
         except AttributeError:
             postscript_bytes = self.postscript
 
@@ -287,9 +290,11 @@ class Puzzle:
 
         return s.tobytes()
 
-    @property
-    def encoding(self):
-        return ENCODING_UTF8 if self.version_tuple()[0] >= 2 else ENCODING
+    def encode(self, s):
+        return s.encode(self.encoding, ENCODING_ERRORS)
+
+    def encode_zstring(self, s):
+        return self.encode(s) + b'\0'
 
     def version_tuple(self):
         return tuple(map(int, self.version.split(b'.')))
@@ -358,26 +363,26 @@ class Puzzle:
         # null termination, followed by all non-empty clues without null
         # termination, followed by notes (but only for version >= 1.3)
         if self.title:
-            cksum = data_cksum(self.title.encode(self.encoding) + b'\0', cksum)
+            cksum = data_cksum(self.encode_zstring(self.title), cksum)
         if self.author:
-            cksum = data_cksum(self.author.encode(self.encoding) + b'\0', cksum)
+            cksum = data_cksum(self.encode_zstring(self.author), cksum)
         if self.copyright:
-            cksum = data_cksum(self.copyright.encode(self.encoding) + b'\0', cksum)
+            cksum = data_cksum(self.encode_zstring(self.copyright), cksum)
 
         for clue in self.clues:
             if clue:
-                cksum = data_cksum(clue.encode(self.encoding), cksum)
+                cksum = data_cksum(self.encode(clue), cksum)
 
         # notes included in global cksum starting v1.3 of format
         if self.version_tuple() >= (1, 3) and self.notes:
-            cksum = data_cksum(self.notes.encode(self.encoding) + b'\0', cksum)
+            cksum = data_cksum(self.encode_zstring(self.notes), cksum)
 
         return cksum
 
     def global_cksum(self):
         cksum = self.header_cksum()
-        cksum = data_cksum(self.solution.encode(self.encoding), cksum)
-        cksum = data_cksum(self.fill.encode(self.encoding), cksum)
+        cksum = data_cksum(self.encode(self.solution), cksum)
+        cksum = data_cksum(self.encode(self.fill), cksum)
         cksum = self.text_cksum(cksum)
         # extensions do not seem to be included in global cksum
         return cksum
@@ -385,8 +390,8 @@ class Puzzle:
     def magic_cksum(self):
         cksums = [
             self.header_cksum(),
-            data_cksum(self.solution.encode(self.encoding)),
-            data_cksum(self.fill.encode(self.encoding)),
+            data_cksum(self.encode(self.solution)),
+            data_cksum(self.encode(self.fill)),
             self.text_cksum()
         ]
 
@@ -451,7 +456,7 @@ class PuzzleBuffer:
 
     def write_string(self, s):
         s = s or ''
-        self.data.append(s.encode(self.encoding) + b'\0')
+        self.data.append(s.encode(self.encoding, ENCODING_ERRORS) + b'\0')
 
     def pack(self, struct_format, *values):
         self.data.append(struct.pack(struct_format, *values))
@@ -583,9 +588,9 @@ class Rebus:
         if self.has_rebus():
             # commit changes back to puzzle.extensions
             self.puzzle.extensions[Extensions.Rebus] = pack_bytes(self.table)
-            rebus_solutions = dict_to_string(self.solutions).encode(self.puzzle.encoding)
+            rebus_solutions = self.puzzle.encode(dict_to_string(self.solutions))
             self.puzzle.extensions[Extensions.RebusSolutions] = rebus_solutions
-            rebus_fill = dict_to_string(self.fill).encode(self.puzzle.encoding)
+            rebus_fill = self.puzzle.encode(dict_to_string(self.fill))
             self.puzzle.extensions[Extensions.RebusFill] = rebus_fill
 
 
@@ -681,7 +686,7 @@ def unscramble_string(s, key):
 
 def scrambled_cksum(scrambled, width, height, ignore_chars=BLACKSQUARE, encoding=ENCODING):
     data = replace_chars(square(scrambled, width, height), ignore_chars)
-    return data_cksum(data.encode(encoding))
+    return data_cksum(data.encode(encoding, ENCODING_ERRORS))
 
 
 def key_digits(key):
