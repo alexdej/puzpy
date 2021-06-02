@@ -43,6 +43,7 @@ ACROSSDOWN = 'ACROSS&DOWN'
 BLACKSQUARE = '.'
 BLACKSQUARE2 = ':'
 
+
 def enum(**enums):
     return type('Enum', (), enums)
 
@@ -618,6 +619,7 @@ def replace_chars(s, chars, replacement=''):
     for ch in chars:
         s = s.replace(ch, replacement)
     return s
+
 
 def scramble_solution(solution, width, height, key, ignore_chars=BLACKSQUARE):
     sq = square(solution, width, height)
