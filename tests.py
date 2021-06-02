@@ -74,8 +74,8 @@ class PuzzleTests(unittest.TestCase):
         self.assertEqual(p.postscript, b'\r\n\r\n')
 
     def test_v1_4(self):
-      p = puz.read('testfiles/nyt_v1_4.puz')
-      p.tobytes()
+        p = puz.read('testfiles/nyt_v1_4.puz')
+        p.tobytes()
 
     def test_save_empty_puzzle(self):
         ''' confirm an empty Puzzle() can be saved to a file '''
@@ -211,4 +211,5 @@ def suite():
 
 if __name__ == '__main__':
     print(__file__)
-    unittest.TextTestRunner().run(suite())
+    result = unittest.TextTestRunner().run(suite())
+    sys.exit(not result.wasSuccessful())
