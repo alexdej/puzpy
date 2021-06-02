@@ -211,4 +211,5 @@ def suite():
 
 if __name__ == '__main__':
     print(__file__)
-    unittest.TextTestRunner().run(suite())
+    result = unittest.TextTestRunner().run(suite())
+    sys.exit(not result.wasSuccessful())
