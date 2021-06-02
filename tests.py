@@ -84,6 +84,23 @@ class PuzzleTests(unittest.TestCase):
         p = puz.read('testfiles/nyt_v1_4.puz')
         p.tobytes()
 
+    def test_v2_unicode(self):
+        p = puz.read('testfiles/unicode.puz')
+        # puzzle title contains emoji
+        self.assertEqual(p.title, u'\u2694\ufe0f')
+        self.assertEqual(p.encoding, 'UTF-8')
+        p.tobytes()
+
+    def test_v2_upgrade(self):
+        p = puz.read('testfiles/washpost.puz')
+        p.title = u'\u2694\ufe0f'
+        p.version = b'2.0'
+        p.fileversion = b'2.0\0'
+        p.encoding = puz.ENCODING_UTF8
+        data = p.tobytes()
+        p2 = puz.load(data)
+        self.assertEqual(p2.title, u'\u2694\ufe0f')
+
     def test_save_empty_puzzle(self):
         ''' confirm an empty Puzzle() can be saved to a file '''
         p = puz.Puzzle()
