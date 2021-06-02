@@ -41,7 +41,7 @@ ENCODING = 'ISO-8859-1'
 ACROSSDOWN = 'ACROSS&DOWN'
 
 BLACKSQUARE = '.'
-
+BLACKSQUARE2 = ':'
 
 def enum(**enums):
     return type('Enum', (), enums)
@@ -298,17 +298,20 @@ class Puzzle:
         return self.helpers.setdefault('markup', Markup(self))
 
     def clue_numbering(self):
-        numbering = DefaultClueNumbering(self.fill, self.clues,
-                                         self.width, self.height)
+        numbering = DefaultClueNumbering(self.fill, self.clues, self.width, self.height)
         return self.helpers.setdefault('clues', numbering)
+
+    def blacksquare(self):
+        return BLACKSQUARE2 if self.puzzletype == PuzzleType.Diagramless else BLACKSQUARE
+        #return BLACKSQUARE
 
     def is_solution_locked(self):
         return bool(self.solution_state != SolutionState.Unlocked)
 
     def unlock_solution(self, key):
         if self.is_solution_locked():
-            unscrambled = unscramble_solution(self.solution,
-                                              self.width, self.height, key)
+            unscrambled = unscramble_solution(self.solution, self.width, self.height, key,
+                                              ignore_chars=self.blacksquare())
             if not self.check_answers(unscrambled):
                 return False
 
@@ -322,16 +325,16 @@ class Puzzle:
     def lock_solution(self, key):
         if not self.is_solution_locked():
             # set the scrambled bit and cksum
-            self.scrambled_cksum = scrambled_cksum(self.solution,
-                                                   self.width, self.height)
+            self.scrambled_cksum = scrambled_cksum(self.solution, self.width, self.height,
+                                                   ignore_chars=self.blacksquare())
             self.solution_state = SolutionState.Locked
-            scrambled = scramble_solution(self.solution,
-                                          self.width, self.height, key)
+            scrambled = scramble_solution(self.solution, self.width, self.height, key,
+                                          ignore_chars=self.blacksquare())
             self.solution = scrambled
 
     def check_answers(self, fill):
         if self.is_solution_locked():
-            scrambled = scrambled_cksum(fill, self.width, self.height)
+            scrambled = scrambled_cksum(fill, self.width, self.height, ignore_chars=self.blacksquare())
             return scrambled == self.scrambled_cksum
         else:
             return fill == self.solution
@@ -612,9 +615,14 @@ def data_cksum(data, cksum=0):
     return cksum
 
 
-def scramble_solution(solution, width, height, key):
+def replace_chars(s, chars, replacement=''):
+    for ch in chars:
+        s = s.replace(ch, replacement)
+    return s
+
+def scramble_solution(solution, width, height, key, ignore_chars=BLACKSQUARE):
     sq = square(solution, width, height)
-    data = restore(sq, scramble_string(sq.replace(BLACKSQUARE, ''), key))
+    data = restore(sq, scramble_string(replace_chars(sq, ignore_chars), key))
     return square(data, height, width)
 
 
@@ -640,10 +648,10 @@ def scramble_string(s, key):
     return s
 
 
-def unscramble_solution(scrambled, width, height, key):
+def unscramble_solution(scrambled, width, height, key, ignore_chars=BLACKSQUARE):
     # width and height are reversed here
     sq = square(scrambled, width, height)
-    data = restore(sq, unscramble_string(sq.replace(BLACKSQUARE, ''), key))
+    data = restore(sq, unscramble_string(replace_chars(sq, ignore_chars), key))
     return square(data, height, width)
 
 
@@ -658,8 +666,8 @@ def unscramble_string(s, key):
     return s
 
 
-def scrambled_cksum(scrambled, width, height):
-    data = square(scrambled, width, height).replace(BLACKSQUARE, '')
+def scrambled_cksum(scrambled, width, height, ignore_chars=BLACKSQUARE):
+    data = replace_chars(square(scrambled, width, height), ignore_chars)
     return data_cksum(data.encode(ENCODING))
 
 
@@ -714,7 +722,7 @@ def restore(s, t):
 def is_blacksquare(c):
     if isinstance(c, int):
         c = chr(c)
-    return c == BLACKSQUARE
+    return c in [BLACKSQUARE, BLACKSQUARE2]
 
 
 #
