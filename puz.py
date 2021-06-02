@@ -303,7 +303,6 @@ class Puzzle:
 
     def blacksquare(self):
         return BLACKSQUARE2 if self.puzzletype == PuzzleType.Diagramless else BLACKSQUARE
-        #return BLACKSQUARE
 
     def is_solution_locked(self):
         return bool(self.solution_state != SolutionState.Unlocked)
