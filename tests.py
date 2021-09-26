@@ -47,6 +47,7 @@ class PuzzleTests(unittest.TestCase):
         self.assertTrue(p.has_markup())
         m = p.markup()
         self.assertTrue(all(puz.GridMarkup.Circled == m.markup[i]
+                            and m.is_markup_square(i)
                             for i in m.get_markup_squares()))
         # trigger save
         p.tobytes()

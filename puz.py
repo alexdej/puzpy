@@ -608,7 +608,7 @@ class Markup:
         return [i for i, b in enumerate(self.markup) if b]
 
     def is_markup_square(self, index):
-        return bool(self.table[index])
+        return bool(self.markup[index])
 
     def save(self):
         if self.has_markup():
