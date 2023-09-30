@@ -60,6 +60,8 @@ PuzzleType = enum(
 SolutionState = enum(
     # solution is available in plaintext
     Unlocked=0x0000,
+    # solution is not present in the file
+    NotProvided=0x0002,
     # solution is locked (scrambled) with a key
     Locked=0x0004
 )
@@ -319,7 +321,7 @@ class Puzzle:
         return BLACKSQUARE2 if self.puzzletype == PuzzleType.Diagramless else BLACKSQUARE
 
     def is_solution_locked(self):
-        return bool(self.solution_state != SolutionState.Unlocked)
+        return bool(self.solution_state == SolutionState.Locked)
 
     def unlock_solution(self, key):
         if self.is_solution_locked():
