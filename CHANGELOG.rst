@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.2.6 (Jun 12, 2024)
+--------------------
+* Add NotProvided value to SolutionState enum for puzzles without a solution
+* typo in Markup.is_markup_square
+* utf-8 support for v2 files
+* various fixes for diagramless
+
 0.2.5 (Jun 7, 2019)
 -------------------
 * added support for puz file version 1.4

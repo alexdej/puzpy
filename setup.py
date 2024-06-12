@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='puzpy',
-    version='0.2.5',
+    version='0.2.6',
     description='python crossword puzzle library',
     author='Alex Dejarnatt',
     author_email='adejarnatt@gmail.com',
