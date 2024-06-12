@@ -6,12 +6,14 @@ import unittest
 
 import puz
 
+
 def temp_filename(suffix='puz'):
     # uses NamedTemporaryFile to create a temporary file but then exits the context
     # so as to close the fd and unlink the file. These tests typically want a filename
     # they can write to which doesn't work on every OS when the fd is open.
     with tempfile.NamedTemporaryFile(suffix=suffix) as tmp:
         return tmp.name
+
 
 class PuzzleTests(unittest.TestCase):
 
@@ -128,7 +130,7 @@ class PuzzleTests(unittest.TestCase):
         '''
         filename = temp_filename()
         try:
-            p = puz.Puzzle()            
+            p = puz.Puzzle()
             p.title = 'Test Puzzle'
             p.author = 'Alex'
             p.height = 3
