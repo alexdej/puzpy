@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.2.5 (Jun 7, 2019)
+-------------------
+* added support for puz file version 1.4
+
+0.2.4 (March 15, 2019)
+----------------------
+* minor bug fixes
+
 0.2.3 (October 24, 2016)
 ------------------------
 * Incremented version number as needed for for PyPI.
