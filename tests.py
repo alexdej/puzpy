@@ -6,6 +6,12 @@ import unittest
 
 import puz
 
+def temp_filename(suffix='puz'):
+    # uses NamedTemporaryFile to create a temporary file but then exits the context
+    # so as to close the fd and unlink the file. These tests typically want a filename
+    # they can write to which doesn't work on every OS when the fd is open.
+    with tempfile.NamedTemporaryFile(suffix=suffix) as tmp:
+        return tmp.name
 
 class PuzzleTests(unittest.TestCase):
 
@@ -104,20 +110,25 @@ class PuzzleTests(unittest.TestCase):
 
     def test_save_empty_puzzle(self):
         ''' confirm an empty Puzzle() can be saved to a file '''
-        p = puz.Puzzle()
-        with tempfile.NamedTemporaryFile(suffix='.puz') as tmp:
-            p.save(tmp.name)
-            p2 = puz.read(tmp.name)
+
+        filename = temp_filename()
+        try:
+            p = puz.Puzzle()
+            p.save(filename)
+            p2 = puz.read(filename)
             self.assertEqual(p.puzzletype, p2.puzzletype)
             self.assertEqual(p.version, p2.version)
             self.assertEqual(p.scrambled_cksum, p2.scrambled_cksum)
+        finally:
+            os.unlink(filename)
 
     def test_save_small_puzzle(self):
         ''' an example of creating a small 3x3 puzzle from scratch and writing
         to a file
         '''
-        p = puz.Puzzle()
-        with tempfile.NamedTemporaryFile(suffix='.puz') as tmp:
+        filename = temp_filename()
+        try:
+            p = puz.Puzzle()            
             p.title = 'Test Puzzle'
             p.author = 'Alex'
             p.height = 3
@@ -125,13 +136,15 @@ class PuzzleTests(unittest.TestCase):
             p.solution = 'A' * 9
             p.clues = ['clue'] * 6
             p.fill = '-' * 9
-            p.save(tmp.name)
-            p2 = puz.read(tmp.name)
+            p.save(filename)
+            p2 = puz.read(filename)
             self.assertEqual(p.title, p2.title)
             self.assertEqual(p.author, p2.author)
             self.assertEqual(p.solution, p2.solution)
             self.assertEqual(p.clues, p2.clues)
             self.assertEqual(p.fill, p2.fill)
+        finally:
+            os.unlink(filename)
 
 
 class LockTests(unittest.TestCase):
