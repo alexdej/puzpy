@@ -23,7 +23,7 @@ jobs:
     - name: Build binary wheel and a source tarball
       run: python -m build
     - name: Store the distribution packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: python-package-distributions
         path: dist/
@@ -44,7 +44,7 @@ jobs:
 
     steps:
     - name: Download dist package
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: python-package-distributions
         path: dist/
