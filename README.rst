@@ -1,5 +1,5 @@
 puz.py: python crossword puzzle library (.puz file parser)
-=============
+==========================================================
 Implementation of .puz crossword puzzle file parser based on .puz file format documentation here: http://code.google.com/p/puz/wiki/FileFormat
 
 Examples
@@ -55,5 +55,5 @@ Running tests
 `python tests.py`
 
 License
-------
+-------
 MIT License.
