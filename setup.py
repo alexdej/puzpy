@@ -5,6 +5,8 @@ setup(
     name='puzpy',
     version='0.2.6',
     description='python crossword puzzle library',
+    long_description=open('README.rst').read(),
+    long_description_content_type='text/x-rst',
     author='Alex Dejarnatt',
     author_email='adejarnatt@gmail.com',
     maintainer='Simeon Visser',
