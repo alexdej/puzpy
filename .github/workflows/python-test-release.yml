@@ -5,7 +5,7 @@ name: publish test release
 
 on:
   release:
-    types: [ published ]
+    types: [ published, edited ]
 
 jobs:
   build:
