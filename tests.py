@@ -29,6 +29,11 @@ class PuzzleTests(unittest.TestCase):
         self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
         self.assertTrue(len(p.clues) > 0)
 
+    def test_txt_format(self):
+        p = puz.read('testfiles/txt_puzzle.txt')
+        clues = p.clue_numbering()
+        self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
+
     def test_extensions(self):
         p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
         # We don't use assertIn for compatibility with Python 2.6
