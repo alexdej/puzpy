@@ -1,0 +1,39 @@
+[project]
+name = "puzpy"
+description = "python crossword puzzle library"
+readme = { file = "README.rst", content-type = "text/x-rst" }
+license = { file = "LICENSE" }
+version = "0.2.6"
+keywords = [ "puz", "crosswords", "crossword", "puzzle", "acrosslite", "xword", "xwords" ]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 2",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Puzzle Games",
+]
+authors = [
+    { name = "Alex Dejarnatt", email = "adejarnatt@gmail.com" },
+]
+maintainers = [
+    { name = "Simeon Visser", email = "simeonvisser@gmail.com" },
+]
+
+
+[project.urls]
+Repository = "https://github.com/alexdej/puzpy.git"
+Issues = "https://github.com/alexdej/puzpy/issues"
+
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
