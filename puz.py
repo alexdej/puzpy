@@ -305,17 +305,22 @@ class Puzzle:
         return self.rebus().has_rebus()
 
     def rebus(self):
-        return self.helpers.setdefault('rebus', Rebus(self))
+        if 'rebus' not in self.helpers:
+            self.helpers['rebus'] = Rebus(self)
+        return self.helpers['rebus']
 
     def has_markup(self):
         return self.markup().has_markup()
 
     def markup(self):
-        return self.helpers.setdefault('markup', Markup(self))
+        if 'markup' not in self.helpers:
+            self.helpers['markup'] = Markup(self)
+        return self.helpers['markup']
 
     def clue_numbering(self):
-        numbering = DefaultClueNumbering(self.fill, self.clues, self.width, self.height)
-        return self.helpers.setdefault('clues', numbering)
+        if 'clues' not in self.helpers:
+            self.helpers['clues'] = DefaultClueNumbering(self.fill, self.clues, self.width, self.height)
+        return self.helpers['clues']
 
     def blacksquare(self):
         return BLACKSQUARE2 if self.puzzletype == PuzzleType.Diagramless else BLACKSQUARE
@@ -506,7 +511,10 @@ class DefaultClueNumbering:
                         'clue': clues[c],
                         'clue_index': c,
                         'cell': i,
-                        'len': self.len_across(i)
+                        'row': self.row(i),
+                        'col': self.col(i),
+                        'len': self.len_across(i),
+                        'dir': 'across',
                     })
                     c += 1
                 is_down = self.row(i) == 0 or is_blacksquare(grid[i - width])
@@ -516,7 +524,10 @@ class DefaultClueNumbering:
                         'clue': clues[c],
                         'clue_index': c,
                         'cell': i,
-                        'len': self.len_down(i)
+                        'row': self.row(i),
+                        'col': self.col(i),
+                        'len': self.len_down(i),
+                        'dir': 'down'
                     })
                     c += 1
                 if c > lastc:
@@ -542,6 +553,50 @@ class DefaultClueNumbering:
             if is_blacksquare(self.grid[index + c*self.width]):
                 return c
         return c + 1
+
+
+class Grid:
+    def __init__(self, grid, width, height):
+        self.grid = grid
+        self.width = width
+        self.height = height
+        assert len(self.grid) == self.width * self.height
+
+    def get_cell(self, row, col):
+        return self.grid[self.get_cell_index(row, col)]
+
+    def get_cell_index(self, row, col):
+        return row * self.width + col
+
+    def get_range(self, row, col, length, dir='across'):
+        if dir == 'across':
+            return self.get_range_across(row, col, length)
+        elif dir == 'down':
+            return self.get_range_down(row, col, length)
+        else:
+            assert False, "dir not one of 'across' or 'down'"
+
+    def get_range_across(self, row, col, length):
+        start = self.get_cell_index(row, col)
+        return self.grid[start:start+length]
+
+    def get_range_down(self, row, col, length):
+        return [self.grid[self.get_cell_index(row + i, col)] for i in range(length)]
+
+    def get_range_for_clue(self, clue):
+        return self.get_range(clue['row'], clue['col'], clue['len'], clue['dir'])
+
+    def get_string(self, row, col, length, dir='across'):
+        return ''.join(self.get_range(row, col, length, dir))
+
+    def get_string_across(self, row, col, length):
+        return ''.join(self.get_range_across(row, col, length))
+
+    def get_string_down(self, row, col, length):
+        return ''.join(self.get_range_down(row, col, length))
+
+    def get_string_for_clue(self, clue):
+        return ''.join(self.get_range_for_clue(clue))
 
 
 class Rebus:
