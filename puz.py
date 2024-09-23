@@ -4,6 +4,7 @@ import math
 import string
 import struct
 import sys
+from xml.dom.minidom import Attr
 
 __title__ = 'puzpy'
 __version__ = '0.2.6'
@@ -236,12 +237,17 @@ class Puzzle:
         with open(filename, 'wb') as f:
             f.write(puzzle_bytes)
 
+    def save_helpers(self):
+        for h in self.helpers.values():
+            try:
+                h.save()
+            except AttributeError:
+                pass
+
     def tobytes(self):
         s = PuzzleBuffer(encoding=self.encoding)
         # commit any changes from helpers
-        for h in self.helpers.values():
-            if 'save' in dir(h):
-                h.save()
+        self.save_helpers()
 
         # include any preamble text we might have found on read
         s.write(self.preamble)
@@ -291,6 +297,36 @@ class Puzzle:
         s.write(postscript_bytes)
 
         return s.tobytes()
+
+    def to_text(self, version='1.3'):
+        lines = []
+        lines.append('<ACROSS PUZZLE>')
+        lines.append('<TITLE>')
+        if self.title:
+            lines.append(self.title)
+        lines.append('<AUTHOR>')
+        if self.author:
+            lines.append(self.author)
+        lines.append('<COPYRIGHT>')
+        if self.copyright:
+            lines.append(self.copyright)
+        lines.append('<SIZE>')
+        lines.append('{w}x{h}'.format(w=self.width, h=self.height))
+        lines.append('<GRID>')
+        for r in range(len(self.height)):
+            lines.append(self.grid[r*self.width:(r+1)*self.width])
+        clues = self.clue_numbering()
+        lines.append('<ACROSS>')
+        for clue in clues.across:
+            lines.append(clue['clue'])
+        lines.append('<DOWN>')
+        for clue in clues.down:
+            lines.append(clue['clue'])
+        lines.append('<NOTEPAD>')
+        if self.notes:
+            lines.append(self.notes)
+        lines.append('')
+        return '\n'.join(lines)
 
     def encode(self, s):
         return s.encode(self.encoding, ENCODING_ERRORS)
