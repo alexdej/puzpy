@@ -298,7 +298,7 @@ class Puzzle:
 
         return s.tobytes()
 
-    def to_text(self, version='1.3'):
+    def to_text(self, version='v2'):
         lines = []
         lines.append('<ACROSS PUZZLE>')
         lines.append('<TITLE>')
@@ -327,6 +327,24 @@ class Puzzle:
             lines.append(self.notes)
         lines.append('')
         return '\n'.join(lines)
+
+    def from_text(self, text):
+        lines = text.split('\n')
+        tags = {}
+        tag = ''
+        buf = []
+        for line in lines:
+            if line and line[0] == '<' and line[-1] == '>':
+                if tag:
+                    tags[tag] = '\n'.join(buf)
+                tag = line[1:-1]
+                buf = []
+            else:
+                buf.append(line.strip())
+        if tag:
+            tags[tag] = '\n'.join(buf)
+
+        return tags
 
     def encode(self, s):
         return s.encode(self.encoding, ENCODING_ERRORS)
