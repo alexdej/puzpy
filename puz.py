@@ -4,7 +4,6 @@ import math
 import string
 import struct
 import sys
-from xml.dom.minidom import Attr
 
 __title__ = 'puzpy'
 __version__ = '0.2.6'
