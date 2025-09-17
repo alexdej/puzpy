@@ -761,7 +761,7 @@ def pack_bytes(a):
 # dict string format is k1:v1;k2:v2;...;kn:vn;
 # (for whatever reason there's a trailing ';')
 def parse_dict(s):
-    return dict(p.split(':') for p in s.split(';') if ':' in p)
+    return dict(p.split(':', maxsplit=1) for p in s.split(';') if ':' in p)
 
 
 def dict_to_string(d):
