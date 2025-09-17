@@ -578,13 +578,19 @@ class Grid:
 
     def get_range_across(self, row, col, length):
         start = self.get_cell_index(row, col)
-        return self.grid[start:start+length]
+        return [self.grid[self.get_cell_index(row, col + i)] for i in range(length)]
 
     def get_range_down(self, row, col, length):
         return [self.grid[self.get_cell_index(row + i, col)] for i in range(length)]
 
     def get_range_for_clue(self, clue):
         return self.get_range(clue['row'], clue['col'], clue['len'], clue['dir'])
+
+    def get_row(self, row):
+        return self.get_range_across(row, 0, self.width)
+
+    def get_column(self, col):
+        return self.get_range_down(0, col, self.height)
 
     def get_string(self, row, col, length, dir='across'):
         return ''.join(self.get_range(row, col, length, dir))
