@@ -23,6 +23,34 @@ class PuzzleTests(unittest.TestCase):
         self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
         self.assertTrue(len(p.clues) > 0)
 
+        a1 = clues.across[0]
+        self.assertEqual(a1['num'], 1)
+        self.assertEqual(a1['dir'], 'across')
+        self.assertEqual(a1['clue'], "Mary's pet")
+        self.assertEqual(a1['clue_index'], 0)
+        self.assertEqual(a1['cell'], 0)
+        self.assertEqual(a1['row'], 0)
+        self.assertEqual(a1['col'], 0)
+        self.assertEqual(a1['len'], 4)
+
+        self.assertEqual(a1['clue'], p.clues[a1['clue_index']])
+
+        d1 = clues.down[0]
+        self.assertEqual(d1['num'], 1)
+        self.assertEqual(d1['dir'], 'down')
+        self.assertEqual(d1['clue'], "Hit high in the air")
+        self.assertEqual(d1['clue_index'], 1)
+        self.assertEqual(d1['cell'], 0)
+        self.assertEqual(d1['row'], 0)
+        self.assertEqual(d1['col'], 0)
+        self.assertEqual(d1['len'], 4)
+
+        self.assertEqual(d1['clue'], p.clues[d1['clue_index']])
+
+        soln = puz.Grid(p.solution, p.width, p.height)
+        self.assertEqual('LAMB', soln.get_string_for_clue(a1))
+        self.assertEqual('LOFT', soln.get_string_for_clue(d1))
+
     def test_diagramless_clue_numbering(self):
         p = puz.read('testfiles/nyt_diagramless.puz')
         clues = p.clue_numbering()

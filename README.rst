@@ -12,27 +12,24 @@ Load a puzzle file::
 Print clues with answers::
 
   numbering = p.clue_numbering()
+  solution = puz.Grid(p.solution, p.width, p.height)
 
-  print 'Across'
+  print('Across')
   for clue in numbering.across:
-      answer = ''.join(
-          p.solution[clue['cell'] + i]
-          for i in range(clue['len']))
-      print clue['num'], clue['clue'], '-', answer
+      answer = solution.get_string_for_clue(clue)
+      print(clue['num'], clue['clue'], '-', answer)
 
-  print 'Down'
+  print('Down')
   for clue in numbering.down:
-      answer = ''.join(
-          p.solution[clue['cell'] + i * numbering.width]
-          for i in range(clue['len']))
-      print clue['num'], clue['clue'], '-', answer
+      answer = solution.get_string_for_clue(clue)
+      print(clue['num'], clue['clue'], '-', answer)
 
 Print the grid::
 
+  # p.fill is the current grid; p.solution is the solution grid
+  grid = puz.Grid(p.fill, p.width, p.height)
   for row in range(p.height):
-      cell = row * p.width
-      # Substitute p.solution for p.fill to print the answers
-      print ' '.join(p.fill[cell:cell + p.width])
+      print(' '.join(grid.get_row(row)))
 
 Unlock a scrambled solution::
 
