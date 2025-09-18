@@ -103,8 +103,7 @@ class PuzzleTests(unittest.TestCase):
     def test_v2_upgrade(self):
         p = puz.read('testfiles/washpost.puz')
         p.title = u'\u2694\ufe0f'
-        p.version = b'2.0'
-        p.fileversion = b'2.0\0'
+        p.set_version('2.0')
         p.encoding = puz.ENCODING_UTF8
         data = p.tobytes()
         p2 = puz.load(data)

@@ -131,7 +131,7 @@ class PuzzleFormatError(Exception):
 class Puzzle:
     """Represents a puzzle
     """
-    def __init__(self):
+    def __init__(self, version='1.3'):
         """Initializes a blank puzzle
         """
         self.preamble = b''
@@ -141,8 +141,10 @@ class Puzzle:
         self.copyright = ''
         self.width = 0
         self.height = 0
-        self.version = b'1.3'
-        self.fileversion = b'1.3\0'  # default
+        if not isinstance(version, bytes):
+            version = bytes(version.encode('utf8'))
+        self.version = version
+        self.fileversion = version + b'\0'
         self.encoding = ENCODING
         # these are bytes that might be unused
         self.unk1 = b'\0' * 2
@@ -300,6 +302,12 @@ class Puzzle:
 
     def version_tuple(self):
         return tuple(map(int, self.version.split(b'.')))
+
+    def set_version(self, version):
+        if not isinstance(version, bytes):
+            version = bytes(version.encode('utf-8'))
+        self.version = version
+        self.fileversion = version + b'\0'
 
     def has_rebus(self):
         return self.rebus().has_rebus()
