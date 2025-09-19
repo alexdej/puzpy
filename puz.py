@@ -134,7 +134,7 @@ def load_text(text):
     Parse Across Lite Text format from a string or bytes and return a Puzzle object.
     raises PuzzleFormatError if there's any problem with the format.
     """
-    return from_text_file(text)
+    return from_text_format(text)
 
 
 class PuzzleFormatError(Exception):
@@ -879,7 +879,7 @@ def dict_to_string(d):
     return ';'.join(':'.join(map(str, [k, v])) for k, v in d.items()) + ';'
 
 
-def from_text_file(s):
+def from_text_format(s):
     d = text_file_as_dict(s)
 
     if 'ACROSS PUZZLE' in d:
@@ -957,3 +957,40 @@ def text_file_as_dict(s):
     if k:
         d[k] = '\n'.join(v)
     return d
+
+def to_text_format(p, text_version='v1'):
+    TAB = '\t'  # most lines begin indented with whitespace
+    lines = []
+    if text_version == 'v1':
+        lines.append('<ACROSS PUZZLE>')
+    elif text_version:
+        lines.append(f'<ACROSS PUZZLE {text_version}>')
+    else:
+        raise ValueError("invalid text_version")
+
+    lines.append('<TITLE>')
+    lines.append(TAB + p.title)
+    lines.append('<AUTHOR>')
+    lines.append(TAB + p.author)
+    lines.append('<COPYRIGHT>')
+    lines.append(TAB + p.copyright)
+    lines.append('<SIZE>')
+    lines.append(TAB + f'{p.width}x{p.height}')
+    lines.append('<GRID>')
+    for r in range(p.height):
+        row = p.solution[r*p.width:(r+1)*p.width]
+        lines.append(TAB + row)
+
+    # get clues in across/down order
+    numbering = p.clue_numbering()
+    lines.append('<ACROSS>')
+    for clue in numbering.across:
+        lines.append(TAB + clue['clue'])
+    lines.append('<DOWN>')
+    for clue in numbering.down:
+        lines.append(TAB + clue['clue'])
+
+    lines.append('<NOTEPAD>')
+    lines.append(p.notes)  # no tab here, idk why
+
+    return '\n'.join(lines)

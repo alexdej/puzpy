@@ -275,6 +275,33 @@ def test_convert_text_to_puz():
     assert len(numbering.down) == len(p2.clue_numbering().down)
 
 
+def test_convert_puz_to_text():
+    p = puz.read('testfiles/washpost.puz')
+    text = puz.to_text_format(p)
+    p2 = puz.load_text(text)
+    assert p.title == p2.title
+    assert p.author == p2.author
+    assert p.copyright == p2.copyright
+    assert p.width == p2.width
+    assert p.height == p2.height
+    assert p.fill == p2.fill
+    assert p.solution == p2.solution
+    assert p.clues == p2.clues
+    assert p.notes == p2.notes
+    numbering = p.clue_numbering()
+    assert len(numbering.across) == len(p2.clue_numbering().across)
+    assert len(numbering.down) == len(p2.clue_numbering().down)
+
+
+@pytest.mark.parametrize('filename', glob.glob('testfiles/*.txt'))
+def test_textfile_roundtrip(filename):
+    with open(filename, 'r') as fp:
+        orig = fp.read()
+        p = puz.read_text(filename)
+        new = puz.to_text_format(p)
+        assert orig == new, '%s did not round-trip' % filename
+
+
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*.puz'))
 def test_puzfile_roundtrip(filename):
     is_bad = filename.endswith('_bad.puz')
@@ -282,8 +309,8 @@ def test_puzfile_roundtrip(filename):
         with pytest.raises(puz.PuzzleFormatError):
             puz.read(filename)
     else:
-        with open(filename, 'rb') as fp_filename:
-            orig = fp_filename.read()
+        with open(filename, 'rb') as fp:
+            orig = fp.read()
             p = puz.read(filename)
             new = p.tobytes()
             assert orig == new, '%s did not round-trip' % filename
