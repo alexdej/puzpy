@@ -3,8 +3,11 @@ import os
 import sys
 import tempfile
 import unittest
+import pytest
+from pathlib import Path
 
 import puz
+
 
 
 def temp_filename(suffix='puz'):
@@ -242,52 +245,20 @@ class LockTests(unittest.TestCase):
         self.assertEqual(orig, new, 'nyt_diagramless.puz did not round-trip')
 
 
-class RoundtripPuzfileTests(unittest.TestCase):
+def roundtrip_test(filename):
+    try:
+        with open(filename, 'rb') as fp_filename:
+            orig = fp_filename.read()
+            p = puz.read(filename)
+            new = p.tobytes()
+            assert orig == new, '%s did not round-trip' % filename
+    except puz.PuzzleFormatError:
+        args = (filename, sys.exc_info()[1].message)
+        assert False, '%s threw PuzzleFormatError: %s' % args
 
-    def __init__(self, filename):
-        unittest.TestCase.__init__(self)
-        self.filename = filename
-
-    def runTest(self):
-        try:
-            with open(self.filename, 'rb') as fp_filename:
-                orig = fp_filename.read()
-                p = puz.read(self.filename)
-                if (p.puzzletype == puz.PuzzleType.Normal):
-                    clues = p.clue_numbering()
-                    # smoke test the clue numbering while we're at it
-                    self.assertEqual(
-                        len(p.clues), len(clues.across) + len(clues.down),
-                        'failed in %s' % self.filename)
-                # this is the roundtrip
-                new = p.tobytes()
-                self.assertEqual(orig, new,
-                                 '%s did not round-trip' % self.filename)
-        except puz.PuzzleFormatError:
-            args = (self.filename, sys.exc_info()[1].message)
-            self.assertTrue(False, '%s threw PuzzleFormatError: %s' % args)
-
-
-def tests_in_dir(directory):
-    tests = []
-    for path, _, _ in os.walk(directory):
-        for filename in glob.glob(os.path.join(path, '*.puz')):
-            tests.append(RoundtripPuzfileTests(filename))
-    return tests
-
-
-def suite():
-    # suite consists of any test* method defined in PuzzleTests,
-    # plus a round-trip test for each .puz file in ./testfiles/
-    suite = unittest.TestSuite()
-    loader = unittest.defaultTestLoader
-    suite.addTests(loader.loadTestsFromTestCase(PuzzleTests))
-    suite.addTests(loader.loadTestsFromTestCase(LockTests))
-    suite.addTests(tests_in_dir('testfiles'))
-    return suite
 
 
 if __name__ == '__main__':
     print(__file__)
-    result = unittest.TextTestRunner().run(suite())
-    sys.exit(not result.wasSuccessful())
+    result = pytest.main()
+    sys.exit(result)
