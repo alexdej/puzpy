@@ -1,13 +1,10 @@
-import glob
 import os
 import sys
 import tempfile
 import unittest
 import pytest
-from pathlib import Path
 
 import puz
-
 
 
 def temp_filename(suffix='puz'):
@@ -255,7 +252,6 @@ def roundtrip_test(filename):
     except puz.PuzzleFormatError:
         args = (filename, sys.exc_info()[1].message)
         assert False, '%s threw PuzzleFormatError: %s' % args
-
 
 
 if __name__ == '__main__':

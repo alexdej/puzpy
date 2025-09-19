@@ -1,0 +1,4 @@
+[flake8]
+max-line-length=127
+# ignore auto-generated file
+extend-exclude=test_readme.py

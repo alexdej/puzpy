@@ -1,6 +1,5 @@
-import pathlib
 import pytest
-import puz
+
 from tests import roundtrip_test
 
 

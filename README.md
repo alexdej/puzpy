@@ -1,4 +1,4 @@
-# puz.py: python crossword puzzle library (.puz file parser)
+# puz.py: Python parser implementation for .puz files
 
 Implementation of `.puz` crossword puzzle file parser based on `.puz` file
 format documentation here:
@@ -60,7 +60,13 @@ it can round-trip 100% of them with full fidelity.
 
 ## Running tests
 
-[python tests.py]{.title-ref}
+`pytest`
+
+## Python version support
+
+All currently supported python3 versions are supported. Python 2.7 was supported, 
+and may still work, though ongoing support is not guaranteed. Unit tests
+can be run with python2 using `python2 -m unittest tests`.
 
 ## License
 
