@@ -73,7 +73,6 @@ def test_rebus():
         assert r.is_rebus_square(i)
         assert 'STAR' == r.get_rebus_solution(i)
     assert r.get_rebus_solution(100) is None
-    p.tobytes()
 
 
 def test_markup():
@@ -82,26 +81,29 @@ def test_markup():
     m = p.markup()
     for i in m.get_markup_squares():
         assert puz.GridMarkup.Circled == m.markup[i] and m.is_markup_square(i)
-    p.tobytes()
 
     p = puz.read('testfiles/washpost.puz')
     assert not p.has_markup()
     m = p.markup()
     assert not m.has_markup()
-    p.tobytes()
 
 
 def test_puzzle_type():
-    assert puz.read('testfiles/washpost.puz').puzzletype != puz.PuzzleType.Diagramless
-    assert puz.read('testfiles/nyt_locked.puz').puzzletype != puz.PuzzleType.Diagramless
+    assert puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Normal
+    assert puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Normal
     assert puz.read('testfiles/nyt_diagramless.puz').puzzletype == puz.PuzzleType.Diagramless
 
 
 def test_empty_puzzle():
     p = puz.Puzzle()
-    import pytest
     with pytest.raises(puz.PuzzleFormatError):
         p.load(b'')
+
+
+def test_corrupted_puzzle():
+    p = puz.Puzzle()
+    with pytest.raises(puz.PuzzleFormatError):
+        p.load(b'not a puzzle')
 
 
 def test_junk_at_end_of_puzzle():
@@ -114,14 +116,14 @@ def test_junk_at_end_of_puzzle():
 
 def test_v1_4():
     p = puz.read('testfiles/nyt_v1_4.puz')
-    p.tobytes()
+    assert p.version_tuple() == (1, 4)
 
 
 def test_v2_unicode():
     p = puz.read('testfiles/unicode.puz')
     assert p.title == u'\u2694\ufe0f'
     assert p.encoding == 'UTF-8'
-    p.tobytes()
+    assert p.version_tuple() == (2, 0)
 
 
 def test_v2_upgrade():
@@ -132,6 +134,7 @@ def test_v2_upgrade():
     data = p.tobytes()
     p2 = puz.load(data)
     assert p2.title == u'\u2694\ufe0f'
+    assert p2.version_tuple() == (2, 0)
 
 
 def test_save_empty_puzzle():
