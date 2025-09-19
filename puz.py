@@ -585,7 +585,6 @@ class Grid:
             assert False, "dir not one of 'across' or 'down'"
 
     def get_range_across(self, row, col, length):
-        start = self.get_cell_index(row, col)
         return [self.grid[self.get_cell_index(row, col + i)] for i in range(length)]
 
     def get_range_down(self, row, col, length):
@@ -830,7 +829,7 @@ def pack_bytes(a):
 # dict string format is k1:v1;k2:v2;...;kn:vn;
 # (for whatever reason there's a trailing ';')
 def parse_dict(s):
-    return dict(p.split(':', maxsplit=1) for p in s.split(';') if ':' in p)
+    return dict(p.split(':', 1) for p in s.split(';') if ':' in p)
 
 
 def dict_to_string(d):

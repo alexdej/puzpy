@@ -1,8 +1,8 @@
-import glob
 import os
 import sys
 import tempfile
-import unittest
+import pytest
+import glob
 
 import puz
 
@@ -15,279 +15,242 @@ def temp_filename(suffix='puz'):
         return tmp.name
 
 
-class PuzzleTests(unittest.TestCase):
+def test_clue_numbering():
+    p = puz.read('testfiles/washpost.puz')
+    clues = p.clue_numbering()
+    assert len(p.clues) == len(clues.across) + len(clues.down)
+    assert len(p.clues) > 0
 
-    def test_clue_numbering(self):
-        p = puz.read('testfiles/washpost.puz')
-        clues = p.clue_numbering()
-        self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
-        self.assertTrue(len(p.clues) > 0)
+    a1 = clues.across[0]
+    assert a1['num'] == 1
+    assert a1['dir'] == 'across'
+    assert a1['clue'] == "Mary's pet"
+    assert a1['clue_index'] == 0
+    assert a1['cell'] == 0
+    assert a1['row'] == 0
+    assert a1['col'] == 0
+    assert a1['len'] == 4
 
-        a1 = clues.across[0]
-        self.assertEqual(a1['num'], 1)
-        self.assertEqual(a1['dir'], 'across')
-        self.assertEqual(a1['clue'], "Mary's pet")
-        self.assertEqual(a1['clue_index'], 0)
-        self.assertEqual(a1['cell'], 0)
-        self.assertEqual(a1['row'], 0)
-        self.assertEqual(a1['col'], 0)
-        self.assertEqual(a1['len'], 4)
+    assert a1['clue'] == p.clues[a1['clue_index']]
 
-        self.assertEqual(a1['clue'], p.clues[a1['clue_index']])
+    d1 = clues.down[0]
+    assert d1['num'] == 1
+    assert d1['dir'] == 'down'
+    assert d1['clue'] == "Hit high in the air"
+    assert d1['clue_index'] == 1
+    assert d1['cell'] == 0
+    assert d1['row'] == 0
+    assert d1['col'] == 0
+    assert d1['len'] == 4
 
-        d1 = clues.down[0]
-        self.assertEqual(d1['num'], 1)
-        self.assertEqual(d1['dir'], 'down')
-        self.assertEqual(d1['clue'], "Hit high in the air")
-        self.assertEqual(d1['clue_index'], 1)
-        self.assertEqual(d1['cell'], 0)
-        self.assertEqual(d1['row'], 0)
-        self.assertEqual(d1['col'], 0)
-        self.assertEqual(d1['len'], 4)
+    assert d1['clue'] == p.clues[d1['clue_index']]
 
-        self.assertEqual(d1['clue'], p.clues[d1['clue_index']])
+    soln = puz.Grid(p.solution, p.width, p.height)
+    assert 'LAMB' == soln.get_string_for_clue(a1)
+    assert 'LOFT' == soln.get_string_for_clue(d1)
 
-        soln = puz.Grid(p.solution, p.width, p.height)
-        self.assertEqual('LAMB', soln.get_string_for_clue(a1))
-        self.assertEqual('LOFT', soln.get_string_for_clue(d1))
 
-    def test_diagramless_clue_numbering(self):
-        p = puz.read('testfiles/nyt_diagramless.puz')
-        clues = p.clue_numbering()
-        self.assertEqual(len(p.clues), len(clues.across) + len(clues.down))
-        self.assertTrue(len(p.clues) > 0)
+def test_diagramless_clue_numbering():
+    p = puz.read('testfiles/nyt_diagramless.puz')
+    clues = p.clue_numbering()
+    assert len(p.clues) == len(clues.across) + len(clues.down)
+    assert len(p.clues) > 0
 
-    def test_extensions(self):
-        p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
-        # We don't use assertIn for compatibility with Python 2.6
-        self.assertTrue(puz.Extensions.Rebus in p.extensions)
-        self.assertTrue(puz.Extensions.RebusSolutions in p.extensions)
-        self.assertTrue(puz.Extensions.Markup in p.extensions)
 
-    def test_rebus(self):
-        p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
-        self.assertTrue(p.has_rebus())
-        r = p.rebus()
-        self.assertTrue(r.has_rebus())
-        self.assertEqual(3, len(r.get_rebus_squares()))
-        self.assertTrue(all(r.is_rebus_square(i)
-                            for i in r.get_rebus_squares()))
-        self.assertTrue(all('STAR' == r.get_rebus_solution(i)
-                            for i in r.get_rebus_squares()))
-        self.assertEqual(None, r.get_rebus_solution(100))
-        # trigger save
-        p.tobytes()
+def test_extensions():
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+    assert puz.Extensions.Rebus in p.extensions
+    assert puz.Extensions.RebusSolutions in p.extensions
+    assert puz.Extensions.Markup in p.extensions
 
-    def test_markup(self):
-        p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
-        self.assertTrue(p.has_markup())
-        m = p.markup()
-        self.assertTrue(all(puz.GridMarkup.Circled == m.markup[i]
-                            and m.is_markup_square(i)
-                            for i in m.get_markup_squares()))
-        # trigger save
-        p.tobytes()
 
-        p = puz.read('testfiles/washpost.puz')
-        self.assertFalse(p.has_markup())
-        m = p.markup()
-        self.assertFalse(m.has_markup())
-        # trigger save
-        p.tobytes()
+def test_rebus():
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+    assert p.has_rebus()
+    r = p.rebus()
+    assert r.has_rebus()
+    assert 3 == len(r.get_rebus_squares())
+    for i in r.get_rebus_squares():
+        assert r.is_rebus_square(i)
+        assert 'STAR' == r.get_rebus_solution(i)
+    assert r.get_rebus_solution(100) is None
 
-    def test_puzzle_type(self):
-        self.assertNotEqual(
-            puz.read('testfiles/washpost.puz').puzzletype,
-            puz.PuzzleType.Diagramless)
-        self.assertNotEqual(
-            puz.read('testfiles/nyt_locked.puz').puzzletype,
-            puz.PuzzleType.Diagramless)
-        self.assertEqual(
-            puz.read('testfiles/nyt_diagramless.puz').puzzletype,
-            puz.PuzzleType.Diagramless)
 
-    def test_empty_puzzle(self):
+def test_markup():
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+    assert p.has_markup()
+    m = p.markup()
+    for i in m.get_markup_squares():
+        assert puz.GridMarkup.Circled == m.markup[i] and m.is_markup_square(i)
+
+    p = puz.read('testfiles/washpost.puz')
+    assert not p.has_markup()
+    m = p.markup()
+    assert not m.has_markup()
+
+
+def test_puzzle_type():
+    assert puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Normal
+    assert puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Normal
+    assert puz.read('testfiles/nyt_diagramless.puz').puzzletype == puz.PuzzleType.Diagramless
+
+
+def test_empty_puzzle():
+    p = puz.Puzzle()
+    with pytest.raises(puz.PuzzleFormatError):
+        p.load(b'')
+
+
+def test_corrupted_puzzle():
+    p = puz.Puzzle()
+    with pytest.raises(puz.PuzzleFormatError):
+        p.load(b'not a puzzle')
+
+
+def test_junk_at_end_of_puzzle():
+    with open('testfiles/washpost.puz', 'rb') as fp:
+        data = fp.read() + b'\r\n\r\n'
+    p = puz.Puzzle()
+    p.load(data)
+    assert p.postscript == b'\r\n\r\n'
+
+
+def test_v1_4():
+    p = puz.read('testfiles/nyt_v1_4.puz')
+    assert p.version_tuple() == (1, 4)
+
+
+def test_v2_unicode():
+    p = puz.read('testfiles/unicode.puz')
+    assert p.title == u'\u2694\ufe0f'
+    assert p.encoding == 'UTF-8'
+    assert p.version_tuple() == (2, 0)
+
+
+def test_v2_upgrade():
+    p = puz.read('testfiles/washpost.puz')
+    p.title = u'\u2694\ufe0f'
+    p.set_version('2.0')
+    p.encoding = puz.ENCODING_UTF8
+    data = p.tobytes()
+    p2 = puz.load(data)
+    assert p2.title == u'\u2694\ufe0f'
+    assert p2.version_tuple() == (2, 0)
+
+
+def test_save_empty_puzzle():
+    filename = temp_filename()
+    try:
         p = puz.Puzzle()
-        self.assertRaises(puz.PuzzleFormatError, p.load, b'')
+        p.save(filename)
+        p2 = puz.read(filename)
+        assert p.puzzletype == p2.puzzletype
+        assert p.version == p2.version
+        assert p.scrambled_cksum == p2.scrambled_cksum
+    finally:
+        os.unlink(filename)
 
-    def test_junk_at_end_of_puzzle(self):
-        with open('testfiles/washpost.puz', 'rb') as fp:
-            data = fp.read() + b'\r\n\r\n'
+
+def test_save_small_puzzle():
+    filename = temp_filename()
+    try:
         p = puz.Puzzle()
-        p.load(data)
-        self.assertEqual(p.postscript, b'\r\n\r\n')
-
-    def test_v1_4(self):
-        p = puz.read('testfiles/nyt_v1_4.puz')
-        p.tobytes()
-
-    def test_v2_unicode(self):
-        p = puz.read('testfiles/unicode.puz')
-        # puzzle title contains emoji
-        self.assertEqual(p.title, u'\u2694\ufe0f')
-        self.assertEqual(p.encoding, 'UTF-8')
-        p.tobytes()
-
-    def test_v2_upgrade(self):
-        p = puz.read('testfiles/washpost.puz')
-        p.title = u'\u2694\ufe0f'
-        p.set_version('2.0')
-        p.encoding = puz.ENCODING_UTF8
-        data = p.tobytes()
-        p2 = puz.load(data)
-        self.assertEqual(p2.title, u'\u2694\ufe0f')
-
-    def test_save_empty_puzzle(self):
-        ''' confirm an empty Puzzle() can be saved to a file '''
-
-        filename = temp_filename()
-        try:
-            p = puz.Puzzle()
-            p.save(filename)
-            p2 = puz.read(filename)
-            self.assertEqual(p.puzzletype, p2.puzzletype)
-            self.assertEqual(p.version, p2.version)
-            self.assertEqual(p.scrambled_cksum, p2.scrambled_cksum)
-        finally:
-            os.unlink(filename)
-
-    def test_save_small_puzzle(self):
-        ''' an example of creating a small 3x3 puzzle from scratch and writing
-        to a file
-        '''
-        filename = temp_filename()
-        try:
-            p = puz.Puzzle()
-            p.title = 'Test Puzzle'
-            p.author = 'Alex'
-            p.height = 3
-            p.width = 3
-            p.solution = 'A' * 9
-            p.clues = ['clue'] * 6
-            p.fill = '-' * 9
-            p.save(filename)
-            p2 = puz.read(filename)
-            self.assertEqual(p.title, p2.title)
-            self.assertEqual(p.author, p2.author)
-            self.assertEqual(p.solution, p2.solution)
-            self.assertEqual(p.clues, p2.clues)
-            self.assertEqual(p.fill, p2.fill)
-        finally:
-            os.unlink(filename)
+        p.title = 'Test Puzzle'
+        p.author = 'Alex'
+        p.height = 3
+        p.width = 3
+        p.solution = 'A' * 9
+        p.clues = ['clue'] * 6
+        p.fill = '-' * 9
+        p.save(filename)
+        p2 = puz.read(filename)
+        assert p.title == p2.title
+        assert p.author == p2.author
+        assert p.solution == p2.solution
+        assert p.clues == p2.clues
+        assert p.fill == p2.fill
+    finally:
+        os.unlink(filename)
 
 
-class LockTests(unittest.TestCase):
-
-    def test_scramble_functions(self):
-        ''' tests some examples from the file format documentation wiki
-        '''
-        self.assertEqual('MLOOPKJ', puz.scramble_string('AEBFCDG', 1234))
-        self.assertEqual('MOP..KLOJ',
-                         puz.scramble_solution('ABC..DEFG', 3, 3, 1234))
-
-        self.assertEqual('AEBFCDG', puz.unscramble_string('MLOOPKJ', 1234))
-        self.assertEqual('ABC..DEFG',
-                         puz.unscramble_solution('MOP..KLOJ', 3, 3, 1234))
-
-        # rectangular example - tricky
-        a = 'ABCD.EFGH.KHIJKLM.NOPW.XYZ'
-        scrambled = puz.scramble_solution(a, 13, 2, 9721)
-        unscrambled = puz.unscramble_solution(scrambled, 13, 2, 9721)
-        self.assertEqual(a, unscrambled)
-
-    def test_locked_bit(self):
-        self.assertFalse(
-            puz.read('testfiles/washpost.puz').is_solution_locked())
-        self.assertTrue(
-            puz.read('testfiles/nyt_locked.puz').is_solution_locked())
-
-    def test_unlock(self):
-        p = puz.read('testfiles/nyt_locked.puz')
-        self.assertTrue(p.is_solution_locked())
-        self.assertFalse(p.unlock_solution(1234))
-        self.assertTrue(p.is_solution_locked())  # still locked
-        self.assertTrue(p.unlock_solution(7844))
-        self.assertFalse(p.is_solution_locked())  # unlocked!
-        # We don't use assertIn for compatibility with Python 2.6
-        self.assertTrue('LAKEONTARIO' in p.solution)
-
-    def test_unlock_relock(self):
-        with open('testfiles/nyt_locked.puz', 'rb') as fp:
-            orig = fp.read()
-        p = puz.read('testfiles/nyt_locked.puz')
-        self.assertTrue(p.is_solution_locked())
-        self.assertTrue(p.unlock_solution(7844))
-        p.lock_solution(7844)
-        new = p.tobytes()
-        self.assertEqual(orig, new, 'nyt_locked.puz did not round-trip')
-
-    def test_check_answers_locked(self):
-        '''Verify that we can check answers even when the solution is locked
-        '''
-        p1 = puz.read('testfiles/nyt_locked.puz')
-        p2 = puz.read('testfiles/nyt_locked.puz')
-        p1.unlock_solution(7844)
-        self.assertTrue(p2.is_solution_locked())
-        self.assertTrue(p2.check_answers(p1.solution))
-
-    def test_unlock_relock_diagramless(self):
-        with open('testfiles/nyt_diagramless.puz', 'rb') as fp:
-            orig = fp.read()
-        p = puz.read('testfiles/nyt_diagramless.puz')
-        self.assertTrue(p.is_solution_locked())
-        self.assertTrue(p.unlock_solution(3285))
-        self.assertFalse(p.is_solution_locked())
-        p.lock_solution(3285)
-        new = p.tobytes()
-        self.assertEqual(orig, new, 'nyt_diagramless.puz did not round-trip')
+def test_scramble_functions():
+    assert 'MLOOPKJ' == puz.scramble_string('AEBFCDG', 1234)
+    assert 'MOP..KLOJ' == puz.scramble_solution('ABC..DEFG', 3, 3, 1234)
+    assert 'AEBFCDG' == puz.unscramble_string('MLOOPKJ', 1234)
+    assert 'ABC..DEFG' == puz.unscramble_solution('MOP..KLOJ', 3, 3, 1234)
+    a = 'ABCD.EFGH.KHIJKLM.NOPW.XYZ'
+    scrambled = puz.scramble_solution(a, 13, 2, 9721)
+    unscrambled = puz.unscramble_solution(scrambled, 13, 2, 9721)
+    assert a == unscrambled
 
 
-class RoundtripPuzfileTests(unittest.TestCase):
-
-    def __init__(self, filename):
-        unittest.TestCase.__init__(self)
-        self.filename = filename
-
-    def runTest(self):
-        try:
-            with open(self.filename, 'rb') as fp_filename:
-                orig = fp_filename.read()
-                p = puz.read(self.filename)
-                if (p.puzzletype == puz.PuzzleType.Normal):
-                    clues = p.clue_numbering()
-                    # smoke test the clue numbering while we're at it
-                    self.assertEqual(
-                        len(p.clues), len(clues.across) + len(clues.down),
-                        'failed in %s' % self.filename)
-                # this is the roundtrip
-                new = p.tobytes()
-                self.assertEqual(orig, new,
-                                 '%s did not round-trip' % self.filename)
-        except puz.PuzzleFormatError:
-            args = (self.filename, sys.exc_info()[1].message)
-            self.assertTrue(False, '%s threw PuzzleFormatError: %s' % args)
+def test_locked_bit():
+    assert not puz.read('testfiles/washpost.puz').is_solution_locked()
+    assert puz.read('testfiles/nyt_locked.puz').is_solution_locked()
 
 
-def tests_in_dir(directory):
-    tests = []
-    for path, _, _ in os.walk(directory):
-        for filename in glob.glob(os.path.join(path, '*.puz')):
-            tests.append(RoundtripPuzfileTests(filename))
-    return tests
+def test_unlock():
+    p = puz.read('testfiles/nyt_locked.puz')
+    assert p.is_solution_locked()
+    assert not p.unlock_solution(1234)
+    assert p.is_solution_locked()
+    assert p.unlock_solution(7844)
+    assert not p.is_solution_locked()
+    assert 'LAKEONTARIO' in p.solution
 
 
-def suite():
-    # suite consists of any test* method defined in PuzzleTests,
-    # plus a round-trip test for each .puz file in ./testfiles/
-    suite = unittest.TestSuite()
-    loader = unittest.defaultTestLoader
-    suite.addTests(loader.loadTestsFromTestCase(PuzzleTests))
-    suite.addTests(loader.loadTestsFromTestCase(LockTests))
-    suite.addTests(tests_in_dir('testfiles'))
-    return suite
+def test_unlock_relock():
+    with open('testfiles/nyt_locked.puz', 'rb') as fp:
+        orig = fp.read()
+    p = puz.read('testfiles/nyt_locked.puz')
+    assert p.is_solution_locked()
+    assert p.unlock_solution(7844)
+    p.lock_solution(7844)
+    new = p.tobytes()
+    assert orig == new, 'nyt_locked.puz did not round-trip'
+
+
+def test_check_answers_locked():
+    p1 = puz.read('testfiles/nyt_locked.puz')
+    p2 = puz.read('testfiles/nyt_locked.puz')
+    p1.unlock_solution(7844)
+    assert p2.is_solution_locked()
+    assert p2.check_answers(p1.solution)
+
+
+def test_unlock_relock_diagramless():
+    with open('testfiles/nyt_diagramless.puz', 'rb') as fp:
+        orig = fp.read()
+    p = puz.read('testfiles/nyt_diagramless.puz')
+    assert p.is_solution_locked()
+    assert p.unlock_solution(3285)
+    assert not p.is_solution_locked()
+    p.lock_solution(3285)
+    new = p.tobytes()
+    assert orig == new, 'nyt_diagramless.puz did not round-trip'
+
+
+@pytest.mark.parametrize('filename', glob.glob('testfiles/*.puz'))
+def test_puzfile_roundtrip(filename):
+    is_bad = filename.endswith('_bad.puz')
+    if is_bad:
+        with pytest.raises(puz.PuzzleFormatError):
+            puz.read(filename)
+    else:
+        with open(filename, 'rb') as fp_filename:
+            orig = fp_filename.read()
+            p = puz.read(filename)
+            new = p.tobytes()
+            assert orig == new, '%s did not round-trip' % filename
+
+
+def test_update_readme_test():
+    # update the test_readme.py file if README.md has changed
+    from pytest_readme import setup
+    setup()
 
 
 if __name__ == '__main__':
     print(__file__)
-    result = unittest.TextTestRunner().run(suite())
-    sys.exit(not result.wasSuccessful())
+    result = pytest.main()
+    sys.exit(result)
