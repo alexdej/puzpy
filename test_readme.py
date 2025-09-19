@@ -1,4 +1,4 @@
-# # puz.py: python crossword puzzle library (.puz file parser)
+# # puz.py: Python parser implementation for .puz files
 # 
 # Implementation of `.puz` crossword puzzle file parser based on `.puz` file
 # format documentation here:
@@ -41,8 +41,7 @@ def test_line_8():
     
     # Save a puzzle with modifications:
     p.fill = 'LAMB' + p.fill[4:]
-    p.save('mine.puz')
-
+    p.save('example.puz')
 
 # ## Notes
 # 
@@ -61,7 +60,19 @@ def test_line_8():
 # 
 # ## Running tests
 # 
-# [python tests.py]{.title-ref}
+# To run the full suite of tests:
+# ```tox```
+# 
+# To run tests using the currently installed version:
+# ```pytest```
+# 
+# To run a subset of tests on python 2.7:
+# ```python2 -m unittest tests```
+# 
+# ## Python version support
+# 
+# All currently supported python3 versions are supported. Python 2.7 was supported, 
+# and may still work, though ongoing support is not guaranteed. 
 # 
 # ## License
 # 

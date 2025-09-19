@@ -41,7 +41,7 @@ for row in range(p.height):
 
 # Save a puzzle with modifications:
 p.fill = 'LAMB' + p.fill[4:]
-p.save('mine.puz')
+p.save('example.puz')
 ```
 ## Notes
 
@@ -60,13 +60,19 @@ it can round-trip 100% of them with full fidelity.
 
 ## Running tests
 
-`pytest`
+To run the full suite of tests:
+```tox```
+
+To run tests using the currently installed version:
+```pytest```
+
+To run a subset of tests on python 2.7:
+```python2 -m unittest tests```
 
 ## Python version support
 
 All currently supported python3 versions are supported. Python 2.7 was supported, 
-and may still work, though ongoing support is not guaranteed. Unit tests
-can be run with python2 using `python2 -m unittest tests`.
+and may still work, though ongoing support is not guaranteed. 
 
 ## License
 

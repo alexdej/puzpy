@@ -253,6 +253,10 @@ def roundtrip_test(filename):
         args = (filename, sys.exc_info()[1].message)
         assert False, '%s threw PuzzleFormatError: %s' % args
 
+def test_update_readme_test():
+    # update the test_readme.py file if README.md has changed
+    from pytest_readme import setup
+    setup()
 
 if __name__ == '__main__':
     print(__file__)
