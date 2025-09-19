@@ -2,6 +2,7 @@ import os
 import sys
 import tempfile
 import pytest
+import glob
 
 import puz
 
@@ -229,16 +230,18 @@ def test_unlock_relock_diagramless():
     assert orig == new, 'nyt_diagramless.puz did not round-trip'
 
 
-def roundtrip_test(filename):
-    try:
+@pytest.mark.parametrize('filename', glob.glob('testfiles/*.puz'))
+def test_puzfile_roundtrip(filename):
+    is_bad = filename.endswith('_bad.puz')
+    if is_bad:
+        with pytest.raises(puz.PuzzleFormatError):
+            puz.read(filename)
+    else:
         with open(filename, 'rb') as fp_filename:
             orig = fp_filename.read()
             p = puz.read(filename)
             new = p.tobytes()
             assert orig == new, '%s did not round-trip' % filename
-    except puz.PuzzleFormatError:
-        args = (filename, sys.exc_info()[1].message)
-        assert False, '%s threw PuzzleFormatError: %s' % args
 
 
 def test_update_readme_test():
