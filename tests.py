@@ -230,6 +230,51 @@ def test_unlock_relock_diagramless():
     assert orig == new, 'nyt_diagramless.puz did not round-trip'
 
 
+def test_text_format():
+    p = puz.read_text('testfiles/text_format_V1.txt')
+    assert p.title == 'Politics: Who, what, where and why'
+    assert p.author == 'Created by Avalonian'
+    assert p.copyright == '1995 Literate Software Systems'
+    assert p.width == 15
+    assert p.height == 15
+    assert p.fill.startswith('----.-----.----')
+    assert p.solution.startswith('FATE.AWASH.AWOL')
+    assert len(p.clues) == 78
+    assert p.notes == 'This is an example notepad entry with\ntwo lines in it.'
+
+    assert not p.is_solution_locked()
+    numbering = p.clue_numbering()
+    print(numbering.across, numbering.down)
+    assert len(numbering.across) == 39
+    assert numbering.across[0]['num'] == 1
+    assert numbering.across[0]['clue'] == 'Destiny'
+    assert numbering.across[-1]['num'] == 61
+    assert numbering.across[-1]['clue'] == 'Encourage'
+    assert len(numbering.down) == 39
+    assert numbering.down[0]['num'] == 1
+    assert numbering.down[0]['clue'] == 'Biting insect'
+    assert numbering.down[-1]['num'] == 55
+    assert numbering.down[-1]['clue'] == 'Tax break savings account'
+    
+
+def test_convert_text_to_puz():
+    p = puz.read_text('testfiles/text_format_V1.txt')
+    bytes = p.tobytes()
+    p2 = puz.load(bytes)
+    assert p.title == p2.title
+    assert p.author == p2.author
+    assert p.copyright == p2.copyright
+    assert p.width == p2.width
+    assert p.height == p2.height
+    assert p.fill == p2.fill
+    assert p.solution == p2.solution
+    assert p.clues == p2.clues
+    assert p.notes == p2.notes
+    numbering = p.clue_numbering()
+    assert len(numbering.across) == len(p2.clue_numbering().across)
+    assert len(numbering.down) == len(p2.clue_numbering().down)
+
+
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*.puz'))
 def test_puzfile_roundtrip(filename):
     is_bad = filename.endswith('_bad.puz')
