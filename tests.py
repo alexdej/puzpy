@@ -231,7 +231,7 @@ def test_unlock_relock_diagramless():
 
 
 def test_text_format():
-    p = puz.read_text('testfiles/text_format_V1.txt')
+    p = puz.read_text('testfiles/text_format_v1.txt')
     assert p.title == 'Politics: Who, what, where and why'
     assert p.author == 'Created by Avalonian'
     assert p.copyright == '1995 Literate Software Systems'
@@ -258,7 +258,7 @@ def test_text_format():
     
 
 def test_convert_text_to_puz():
-    p = puz.read_text('testfiles/text_format_V1.txt')
+    p = puz.read_text('testfiles/text_format_v1.txt')
     bytes = p.tobytes()
     p2 = puz.load(bytes)
     assert p.title == p2.title
