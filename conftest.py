@@ -3,7 +3,7 @@ import pytest
 from tests import roundtrip_test
 
 
-class PuzTestItem(pytest.Item):
+class PuzFileTestItem(pytest.Item):
     def __init__(self, name, path, **kwargs):
         super().__init__(name, **kwargs)
         self.filename = path
@@ -12,12 +12,12 @@ class PuzTestItem(pytest.Item):
         roundtrip_test(self.filename)
 
 
-class PuzTestFile(pytest.File):
+class PuzFileTest(pytest.File):
     def collect(self):
-        return [PuzTestItem.from_parent(self, name='file', path=self.path)]
+        return [PuzFileTestItem.from_parent(self, name='file', path=self.path)]
 
 
 @pytest.hookimpl
 def pytest_collect_file(file_path, path, parent):
     if file_path.match('testfiles/*.puz'):
-        return PuzTestFile.from_parent(parent, path=file_path)
+        return PuzFileTest.from_parent(parent, path=file_path)
