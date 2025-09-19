@@ -1,0 +1,108 @@
+<ACROSS PUZZLE>
+<TITLE>
+	Politics: Who, what, where and why
+<AUTHOR>
+	Created by Avalonian
+<COPYRIGHT>
+	1995 Literate Software Systems
+<SIZE>
+	15x15
+<GRID>
+	FATE.AWASH.AWOL
+	LIES.CURIO.SHOE
+	ELECTORATE.SIZE
+	ASS.ERST.DIETED
+	...CENT.HOSTESS
+	REFITS.JEWISH..
+	ARITH.KERNS.OAF
+	NILE.ANNES.DUPE
+	DEI.OVENS.LOSER
+	..BODILY.RACERS
+	GLUTEAL.PEPS...
+	RESIST.SLUE.SKI
+	OTTO.REPUBLICAN
+	OMES.IRATE.RAMS
+	MERE.XENON.ABET
+<ACROSS>
+	Destiny
+	Above water, barely
+	Deserter
+	True ____ : Arnold S. movie
+	Novel or rare item
+	If the ____ fits, ...
+	Favorite group of 53 across
+	EEE with 16 across
+	Midsummer's Night Dream character
+	Formerly
+	Ate sparingly
+	Monetary unit
+	She entertains guests
+	Make ready for use again
+	Yiddish, informally
+	Math. subject
+	Parts of typeset characters
+	Clod
+	Egyptian river
+	Bancroft and Archer
+	Fool
+	God in latin
+	Pizza place fixtures
+	Sometimes a dieter is one
+	Physical
+	Some kinds of snakes
+	Of posterior muscles
+	Raises one's spirits
+	Block
+	Swing about
+	____ slopes
+	A dog's name
+	GOP member
+	Of masses
+	Angry
+	Strikes violently
+	Just
+	Inert gas
+	Encourage
+<DOWN>
+	Biting insect
+	Troubles
+	Golf equipments
+	Computer keyboard key
+	Oak seed or fruit
+	Sausage
+	I smell ____
+	Squat
+	Community dances
+	Owned property
+	House on Pennsylvania Ave.
+	Seeps
+	City NE of Manchester
+	Subject of dentistry
+	Wife of Asiris
+	Use reference
+	"____, Johnny!"
+	South African currency unit
+	Canal or Lake
+	Delaying tactic of 53 across
+	Spinning ____
+	Toll
+	One who mimics
+	Bearers : comb. form
+	Female pilot
+	Medics
+	Homages
+	Coat part
+	Idle
+	Type of sandwich
+	Clean and care for
+	"____ through!"
+	Smallest planet of the Sun
+	Cover
+	One who works despite a strike
+	Glacial ridge
+	Org.
+	Before
+	Tax break savings account
+<NOTEPAD>
+This is an example notepad entry with
+two lines in it.

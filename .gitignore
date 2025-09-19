@@ -39,7 +39,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-example.puz
+example*.puz
 
 # Translations
 *.mo
