@@ -244,7 +244,6 @@ def test_text_format():
 
     assert not p.is_solution_locked()
     numbering = p.clue_numbering()
-    print(numbering.across, numbering.down)
     assert len(numbering.across) == 39
     assert numbering.across[0]['num'] == 1
     assert numbering.across[0]['clue'] == 'Destiny'
