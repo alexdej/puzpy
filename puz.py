@@ -912,14 +912,7 @@ def from_text_format(s):
     if 'NOTEPAD' in d:
         p.notes = d['NOTEPAD']
     if 'REBUS' in d:
-        # rebus_lines = d['REBUS'].splitlines()
-        # rebus_table = []
-        # for line in rebus_lines:
-        #     rebus_table.extend(int(ch) for ch in line.ljust(p.width, '0'))
-        # if len(rebus_table) != p.width * p.height:
-        #     raise PuzzleFormatError('REBUS table size does not match puzzle size')
-        # p.extensions[Extensions.Rebus] = pack_bytes(rebus_table)
-        pass # not sure how to implement this yet
+        pass # TODO: text file REBUS
     
     if p.solution:
         p.fill = ''.join(c if c == BLACKSQUARE else BLANKSQUARE for c in p.solution)
