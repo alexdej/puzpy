@@ -10,7 +10,7 @@ puzpy is a Python library for parsing .puz crossword puzzle files. It provides a
 - Change to repository root: `cd /home/runner/work/puzpy/puzpy`
 - Python 3.8+ is required (currently tested on 3.10-3.13)
 - Install testing dependencies: `pip install pytest pytest-readme flake8 coverage tox`
-- Install package in development mode: `pip install -e .` (takes ~3 seconds)
+- Optional package installation: `pip install -e .` (may fail due to network timeouts - not required for development)
 
 ### Running Tests
 - **Main test suite**: `pytest tests.py -v` - Takes ~0.14s, runs 40 tests. NEVER CANCEL.
@@ -64,9 +64,9 @@ print(f"Is locked: {p3.is_solution_locked()}")
 - For testing: run tests directly with pytest or python.
 
 ### Installation for Distribution
-- `pip install -e .` - Install in development mode (recommended for development)
-- `pip install .` - Install normally
-- Package can be imported as `import puz` after installation
+- `pip install -e .` - Install in development mode (may fail due to network timeouts)
+- `pip install .` - Install normally (may fail due to network timeouts)
+- **Package works without installation**: Can import `puz` directly from the repository directory
 
 ### Distribution Files
 - Main library: `puz.py` (31KB, single file)
@@ -130,7 +130,8 @@ Before committing changes, always run:
 3. Manual validation scenarios above
 
 ### Known Limitations
-- Tox may fail due to network timeouts when installing dependencies
+- **Network timeouts**: Pip install and tox may fail due to network timeouts when installing dependencies
+- **Package installation not required**: Library works directly from source without installation
 - Some flake8 style issues exist in the codebase (14 issues currently)
 - test_readme.py is auto-generated and excluded from flake8 checking
 - No unittest framework tests - everything uses pytest
