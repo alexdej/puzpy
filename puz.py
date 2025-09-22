@@ -630,7 +630,7 @@ class Rebus:
             self.table = parse_bytes(rebus_data)
         
         if Extensions.RebusSolutions in self.puzzle.extensions:
-            raw_solution_data = self.puzzle.extensions[Extensions.RebusSolutions] or b''
+            raw_solution_data = self.puzzle.extensions[Extensions.RebusSolutions]
             solutions_str = raw_solution_data.decode(puzzle.encoding)
             self.solutions = {
                int(item[0]): item[1]
@@ -638,7 +638,7 @@ class Rebus:
             }
         
         if Extensions.RebusFill in self.puzzle.extensions:
-            raw_fill_data = self.puzzle.extensions[Extensions.RebusFill] or b''
+            raw_fill_data = self.puzzle.extensions[Extensions.RebusFill]
             fill_str = raw_fill_data.decode(puzzle.encoding)
             self.fill = {
                 int(item[0]): item[1]
