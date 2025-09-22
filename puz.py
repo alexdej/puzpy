@@ -44,6 +44,7 @@ ACROSSDOWN = b'ACROSS&DOWN'
 
 BLACKSQUARE = '.'
 BLACKSQUARE2 = ':'
+BLANKSQUARE = '-'
 
 
 def enum(**enums):
@@ -103,20 +104,37 @@ Extensions = enum(
 def read(filename):
     """
     Read a .puz file and return the Puzzle object.
-    throws PuzzleFormatError if there's any problem with the file format.
+    raises PuzzleFormatError if there's any problem with the file format.
     """
     with open(filename, 'rb') as f:
         return load(f.read())
 
 
+def read_text(filename):
+    """
+    Read an Across Lite .txt text format file and return the Puzzle object.
+    raises PuzzleFormatError if there's any problem with the file format.
+    """
+    with open(filename, 'r', encoding='utf-8', errors='replace') as f:
+        return load_text(f.read())
+    
+
 def load(data):
     """
     Read .puz file data and return the Puzzle object.
-    throws PuzzleFormatError if there's any problem with the file format.
+    raises PuzzleFormatError if there's any problem with the file format.
     """
     puz = Puzzle()
     puz.load(data)
     return puz
+
+
+def load_text(text):
+    """
+    Parse Across Lite Text format from a string or bytes and return a Puzzle object.
+    raises PuzzleFormatError if there's any problem with the format.
+    """
+    return from_text_format(text)
 
 
 class PuzzleFormatError(Exception):
@@ -497,6 +515,63 @@ class PuzzleBuffer:
 
 # clue numbering helper
 
+def get_grid_numbering(grid, width, height):
+    # Add numbers to the grid based on positions of black squares
+    def col(index):
+        return index % width
+
+    def row(index):
+        return int(math.floor(index / width))
+    
+    def len_across(index):
+        for c in range(0, width - col(index)):
+            if is_blacksquare(grid[index + c]):
+                return c
+        return c + 1
+
+    def len_down(index):
+        for c in range(0, height - row(index)):
+            if is_blacksquare(grid[index + c*width]):
+                return c
+        return c + 1
+
+    a = []
+    d = []
+    c = 0
+    n = 1
+    for i in range(0, len(grid)):
+        if not is_blacksquare(grid[i]):
+            lastc = c
+            is_across = col(i) == 0 or is_blacksquare(grid[i - 1])
+            if is_across and len_across(i) > 1:
+                a.append({
+                    'num': n,
+                    'clue': None,  # filled in by caller
+                    'clue_index': c,
+                    'cell': i,
+                    'row': row(i),
+                    'col': col(i),
+                    'len': len_across(i),
+                    'dir': 'across',
+                })
+                c += 1
+            is_down = row(i) == 0 or is_blacksquare(grid[i - width])
+            if is_down and len_down(i) > 1:
+                d.append({
+                    'num': n,
+                    'clue': None,  # filled in by caller
+                    'clue_index': c,
+                    'cell': i,
+                    'row': row(i),
+                    'col': col(i),
+                    'len': len_down(i),
+                    'dir': 'down'
+                })
+                c += 1
+            if c > lastc:
+                n += 1
+    return a, d
+
 class DefaultClueNumbering:
     def __init__(self, grid, clues, width, height):
         self.grid = grid
@@ -504,46 +579,14 @@ class DefaultClueNumbering:
         self.width = width
         self.height = height
 
-        # compute across & down
-        a = []
-        d = []
-        c = 0
-        n = 1
-        for i in range(0, len(grid)):
-            if not is_blacksquare(grid[i]):
-                lastc = c
-                is_across = self.col(i) == 0 or is_blacksquare(grid[i - 1])
-                if is_across and self.len_across(i) > 1:
-                    a.append({
-                        'num': n,
-                        'clue': clues[c],
-                        'clue_index': c,
-                        'cell': i,
-                        'row': self.row(i),
-                        'col': self.col(i),
-                        'len': self.len_across(i),
-                        'dir': 'across',
-                    })
-                    c += 1
-                is_down = self.row(i) == 0 or is_blacksquare(grid[i - width])
-                if is_down and self.len_down(i) > 1:
-                    d.append({
-                        'num': n,
-                        'clue': clues[c],
-                        'clue_index': c,
-                        'cell': i,
-                        'row': self.row(i),
-                        'col': self.col(i),
-                        'len': self.len_down(i),
-                        'dir': 'down'
-                    })
-                    c += 1
-                if c > lastc:
-                    n += 1
+        self.across, self.down = get_grid_numbering(grid, width, height)
+        for entry in self.across:
+            entry['clue'] = clues[entry['clue_index']]
+        for entry in self.down:
+            entry['clue'] = clues[entry['clue_index']]
 
-        self.across = a
-        self.down = d
-
+    # The following methods are no longer in use, but left here in case
+    # anyone was using them externally. They may be removed in a future release.
     def col(self, index):
         return index % self.width
 
@@ -834,3 +877,111 @@ def parse_dict(s):
 
 def dict_to_string(d):
     return ';'.join(':'.join(map(str, [k, v])) for k, v in d.items()) + ';'
+
+
+def from_text_format(s):
+    d = text_file_as_dict(s)
+
+    if 'ACROSS PUZZLE' in d:
+        file_version = 'v1'
+    elif 'ACROSS PUZZLE v2' in d:
+        file_version = 'v2'
+    else:
+        raise PuzzleFormatError('Not a valid Across Lite text puzzle')
+
+    p = Puzzle()
+    across_clues = []
+    down_clues = []
+    if 'TITLE' in d:
+        p.title = d['TITLE']
+    if 'AUTHOR' in d:
+        p.author = d['AUTHOR']
+    if 'COPYRIGHT' in d:
+        p.copyright = d['COPYRIGHT']
+    if 'SIZE' in d:
+        size = d['SIZE'].split('x')
+        p.width = int(size[0])
+        p.height = int(size[1])
+    if 'GRID' in d:
+        solution_lines = d['GRID'].splitlines()
+        p.solution = ''.join(line.strip() for line in solution_lines if line.strip())
+    if 'ACROSS' in d:
+        across_clues.extend(line.strip() for line in d['ACROSS'].splitlines() if line.strip())
+    if 'DOWN' in d:
+        down_clues.extend(line.strip() for line in d['DOWN'].splitlines() if line.strip())
+    if 'NOTEPAD' in d:
+        p.notes = d['NOTEPAD']
+    if 'REBUS' in d:
+        pass # TODO: text file REBUS
+    
+    if p.solution:
+        p.fill = ''.join(c if c == BLACKSQUARE else BLANKSQUARE for c in p.solution)
+        across, down = get_grid_numbering(p.fill, p.width, p.height)
+        # we have to match puzfile's expected clue ordering or we won't be able to 
+        # write the puzzle out as a valid .puz file
+        p.clues = [''] * (len(across) + len(down))
+        for i in range(len(across)):
+            clue = across_clues[i] if i < len(across_clues) else ''
+            across[i]['clue'] = clue
+            p.clues[across[i]['clue_index']] = clue
+        for i in range(len(down)):
+            clue = down_clues[i] if i < len(down_clues) else ''
+            down[i]['clue'] = clue
+            p.clues[down[i]['clue_index']] = clue
+
+    return p
+
+def text_file_as_dict(s):
+    d = {}
+    k = None
+    v = []
+    for line in s.splitlines():
+        line = line.strip()
+        if line.startswith('<') and line.endswith('>'):
+            if k:
+                d[k] = '\n'.join(v)
+            k = line[1:-1]
+            v = []
+        else:
+            v.append(line)
+
+    if k:
+        d[k] = '\n'.join(v)
+    return d
+
+def to_text_format(p, text_version='v1'):
+    TAB = '\t'  # most lines begin indented with whitespace
+    lines = []
+    if text_version == 'v1':
+        lines.append('<ACROSS PUZZLE>')
+    elif text_version:
+        lines.append(f'<ACROSS PUZZLE {text_version}>')
+    else:
+        raise ValueError("invalid text_version")
+
+    lines.append('<TITLE>')
+    lines.append(TAB + p.title)
+    lines.append('<AUTHOR>')
+    lines.append(TAB + p.author)
+    lines.append('<COPYRIGHT>')
+    lines.append(TAB + p.copyright)
+    lines.append('<SIZE>')
+    lines.append(TAB + f'{p.width}x{p.height}')
+    lines.append('<GRID>')
+    for r in range(p.height):
+        row = p.solution[r*p.width:(r+1)*p.width]
+        lines.append(TAB + row)
+
+    # get clues in across/down order
+    numbering = p.clue_numbering()
+    lines.append('<ACROSS>')
+    for clue in numbering.across:
+        lines.append(TAB + clue['clue'])
+    lines.append('<DOWN>')
+    for clue in numbering.down:
+        lines.append(TAB + clue['clue'])
+
+    lines.append('<NOTEPAD>')
+    lines.append(p.notes)  # no tab here, idk why
+
+    return '\n'.join(lines)

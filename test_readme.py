@@ -42,6 +42,10 @@ def test_line_8():
     # Save a puzzle with modifications:
     p.fill = 'LAMB' + p.fill[4:]
     p.save('example.puz')
+    
+    # Convert from Across Lite text format to .puz:
+    p2 = puz.read_text('testfiles/text_format_v1.txt')
+    p2.save('example2.puz')
 
 # ## Notes
 # 
