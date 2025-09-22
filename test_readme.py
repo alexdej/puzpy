@@ -74,6 +74,12 @@ def test_line_8():
 # All currently supported python3 versions are supported. Python 2.7 was supported, 
 # and may still work, though ongoing support is not guaranteed. 
 # 
+# ## Resources
+# 
+# - [`.puz` file format](http://code.google.com/p/puz/wiki/FileFormat)
+# - [Archive of NYT daily puzzles 1993 - August 2021](https://archive.org/details/nyt-puz)
+# - [`.puz` to `.pdf` file converter](https://www.crosswordnexus.com/apps/puz-to-pdf/)
+# 
 # ## License
 # 
 # MIT License.
