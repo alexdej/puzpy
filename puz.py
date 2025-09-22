@@ -112,7 +112,7 @@ def read(filename):
 
 def read_text(filename):
     """
-    Read a Across Lite .txt text format file and return the Puzzle object.
+    Read an Across Lite .txt text format file and return the Puzzle object.
     raises PuzzleFormatError if there's any problem with the file format.
     """
     with open(filename, 'r', encoding='utf-8', errors='replace') as f:
