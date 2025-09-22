@@ -77,6 +77,7 @@ def test_line_8():
 # ## Resources
 # 
 # - [`.puz` file format](http://code.google.com/p/puz/wiki/FileFormat)
+# - [`.txt` file format](https://www.litsoft.com/across/docs/AcrossTextFormat.pdf)
 # - [Archive of NYT daily puzzles 1993 - August 2021](https://archive.org/details/nyt-puz)
 # - [`.puz` to `.pdf` file converter](https://www.crosswordnexus.com/apps/puz-to-pdf/)
 # 
