@@ -254,8 +254,6 @@ def test_text_format():
     assert numbering.down[0]['clue'] == 'Biting insect'
     assert numbering.down[-1]['num'] == 55
     assert numbering.down[-1]['clue'] == 'Tax break savings account'
-    
-
 def test_convert_text_to_puz():
     p = puz.read_text('testfiles/text_format_v1.txt')
     bytes = p.tobytes()
