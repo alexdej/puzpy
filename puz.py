@@ -932,9 +932,7 @@ def from_text_format(s):
     return p
 
 def text_file_as_dict(s):
-    lines = s.splitlines()
     d = {}
-
     k = None
     v = []
     for line in s.splitlines():
