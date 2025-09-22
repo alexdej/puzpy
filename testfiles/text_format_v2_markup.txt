@@ -22,7 +22,5 @@
 <DOWN>
 	Vehicle
 	Word puzzle
-	Breakfast food
-	Items
 <NOTEPAD>
 Test puzzle with multiple markup types.
