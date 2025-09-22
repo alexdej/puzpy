@@ -84,14 +84,19 @@ GridMarkup = enum(
 Extensions = enum(
     # grid of rebus indices: 0 for non-rebus;
     # i+1 for key i into RebusSolutions map
+    # should be same size as the grid
     Rebus=b'GRBS',
+
     # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
     RebusSolutions=b'RTBL',
-    # user's rebus entries
+
+    # user's rebus entries, same format as RebusSolutions
     RebusFill=b'RUSR',
+
     # timer state: 'a,b' where a is the number of seconds elapsed and
     # b is a boolean (0,1) for whether the timer is running
     Timer=b'LTIM',
+
     # grid cell markup: previously incorrect: 0x10;
     # currently incorrect: 0x20,
     # hinted: 0x40,
@@ -615,24 +620,33 @@ class Grid:
 class Rebus:
     def __init__(self, puzzle):
         self.puzzle = puzzle
+        self.fill = {}
+        self.solutions = {}
+        self.table = [0] * (self.puzzle.width * self.puzzle.height)
+
         # parse rebus data
-        rebus_data = self.puzzle.extensions.get(Extensions.Rebus, b'')
-        self.table = parse_bytes(rebus_data)
-        r_sol_data = self.puzzle.extensions.get(Extensions.RebusSolutions, b'')
-        solutions_str = r_sol_data.decode(puzzle.encoding)
-        fill_data = self.puzzle.extensions.get(Extensions.RebusFill, b'')
-        fill_str = fill_data.decode(puzzle.encoding)
-        self.solutions = dict(
-            (int(item[0]), item[1])
-            for item in parse_dict(solutions_str).items()
-        )
-        self.fill = dict(
-            (int(item[0]), item[1])
-            for item in parse_dict(fill_str).items()
-        )
+        if Extensions.Rebus in self.puzzle.extensions:
+            rebus_data = self.puzzle.extensions[Extensions.Rebus]
+            self.table = parse_bytes(rebus_data)
+        
+        if Extensions.RebusSolutions in self.puzzle.extensions:
+            raw_solution_data = self.puzzle.extensions[Extensions.RebusSolutions] or b''
+            solutions_str = raw_solution_data.decode(puzzle.encoding)
+            self.solutions = {
+               int(item[0]): item[1]
+                for item in parse_dict(solutions_str).items()
+            }
+        
+        if Extensions.RebusFill in self.puzzle.extensions:
+            raw_fill_data = self.puzzle.extensions[Extensions.RebusFill] or b''
+            fill_str = raw_fill_data.decode(puzzle.encoding)
+            self.fill = {
+                int(item[0]): item[1]
+                for item in parse_dict(fill_str).items()
+            }
 
     def has_rebus(self):
-        return Extensions.Rebus in self.puzzle.extensions
+        return Extensions.Rebus in self.puzzle.extensions or any(self.table)
 
     def is_rebus_square(self, index):
         return bool(self.table[index])
