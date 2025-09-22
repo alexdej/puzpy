@@ -1,0 +1,28 @@
+<ACROSS PUZZLE v2>
+<TITLE>
+	Multiple Markup Types Test
+<AUTHOR>
+	Test Author
+<COPYRIGHT>
+	Test Copyright
+<SIZE>
+	4x4
+<GRID>
+	CATS
+	A..O
+	R..M
+	EGGS
+<MARK>
+	circle:1,16
+	incorrect:2,15
+	revealed:3,14
+<ACROSS>
+	Feline animals
+	Breakfast food
+<DOWN>
+	Vehicle
+	Word puzzle
+	Breakfast food
+	Items
+<NOTEPAD>
+Test puzzle with multiple markup types.

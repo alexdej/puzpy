@@ -1,0 +1,25 @@
+<ACROSS PUZZLE v2>
+<TITLE>
+	Test Rebus Puzzle
+<AUTHOR>
+	Test Author
+<COPYRIGHT>
+	Test Copyright
+<SIZE>
+	3x3
+<GRID>
+	CAT
+	A.O
+	REX
+<REBUS>
+	HEART:1,9
+<MARK>
+	circle:1,9
+<ACROSS>
+	Feline
+	Monarch
+<DOWN>
+	Vehicle
+	Consumed
+<NOTEPAD>
+Test puzzle with rebus entries.

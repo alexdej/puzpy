@@ -290,12 +290,173 @@ def test_convert_puz_to_text():
     assert len(numbering.down) == len(p2.clue_numbering().down)
 
 
+def test_text_format_v2():
+    """Test v2 text format with REBUS and MARK sections"""
+    p = puz.read_text('testfiles/text_format_v2_rebus.txt')
+    
+    # Basic puzzle properties
+    assert p.title == 'Test Rebus Puzzle'
+    assert p.author == 'Test Author'
+    assert p.copyright == 'Test Copyright'
+    assert p.width == 3
+    assert p.height == 3
+    assert p.solution == 'CATA.OREX'
+    
+    # Test rebus functionality
+    assert p.has_rebus()
+    r = p.rebus()
+    assert r.has_rebus()
+    rebus_squares = r.get_rebus_squares()
+    assert len(rebus_squares) == 2
+    assert set(rebus_squares) == {0, 8}
+    
+    # Check rebus solutions
+    for i in rebus_squares:
+        assert r.get_rebus_solution(i) == 'HEART'
+    
+    # Test markup functionality
+    assert p.has_markup()
+    m = p.markup()
+    assert m.has_markup()
+    markup_squares = m.get_markup_squares()
+    assert len(markup_squares) == 2
+    assert set(markup_squares) == {0, 8}
+    
+    # Check markup values (should be circled)
+    for i in markup_squares:
+        assert m.markup[i] == puz.GridMarkup.Circled
+
+
+def test_text_format_v2_roundtrip():
+    """Test round-trip conversion for v2 format"""
+    # Read original
+    with open('testfiles/text_format_v2_rebus.txt', 'r') as fp:
+        orig = fp.read()
+    
+    # Parse and regenerate
+    p = puz.read_text('testfiles/text_format_v2_rebus.txt')
+    new = puz.to_text_format(p, 'v2')
+    
+    assert orig == new
+
+
+def test_rebus_helper_methods():
+    """Test new Rebus helper methods"""
+    p = puz.Puzzle()
+    p.width = 3
+    p.height = 3
+    p.solution = 'ABC.DEF.G'
+    p.fill = '---.--.--'
+    
+    r = p.rebus()
+    
+    # Test adding rebus entries
+    rebus_id = r.add_rebus_entry('STAR', [0, 4, 8])
+    assert rebus_id == 0
+    assert r.solutions[0] == 'STAR'
+    assert r.table[0] == 1
+    assert r.table[4] == 1
+    assert r.table[8] == 1
+    
+    # Test adding another entry
+    rebus_id2 = r.add_rebus_entry('HEART', [2, 6])
+    assert rebus_id2 == 1
+    assert r.solutions[1] == 'HEART'
+    assert r.table[2] == 2
+    assert r.table[6] == 2
+    
+    # Test removing an entry
+    r.remove_rebus_entry(0)
+    assert 0 not in r.solutions
+    assert r.table[0] == 0
+    assert r.table[4] == 0
+    assert r.table[8] == 0
+    
+    # Test clearing all
+    r.clear_all_rebus()
+    assert len(r.solutions) == 0
+    assert all(v == 0 for v in r.table)
+
+
+def test_puz_to_text_v2_conversion():
+    """Test converting existing .puz files to v2 text format"""
+    # Test with an existing rebus puzzle
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+    v2_text = puz.to_text_format(p, 'v2')
+    
+    # Should contain v2 header
+    assert '<ACROSS PUZZLE v2>' in v2_text
+    
+    # Should contain REBUS section since the puzzle has rebus
+    assert '<REBUS>' in v2_text
+    
+    # Should contain MARK section since the puzzle has markup  
+    assert '<MARK>' in v2_text
+    
+    # Test round-trip
+    p2 = puz.load_text(v2_text)
+    assert p2.has_rebus() == p.has_rebus()
+    assert p2.has_markup() == p.has_markup()
+
+
+def test_manual_puzzle_creation_with_rebus():
+    """Test manual creation of a puzzle with rebus entries"""
+    # Create a new puzzle
+    p = puz.Puzzle()
+    p.title = 'Manual Rebus Test'
+    p.author = 'Test Author'
+    p.copyright = 'Test Copyright'
+    p.width = 3
+    p.height = 3
+    p.solution = 'CAT..SUN.'  # 9 characters total
+    p.fill = '---..---.'      # 9 characters total
+    
+    # Add clues in the correct order (clue_index 0, 1, 2)
+    p.clues = ['Feline', 'Bright star', 'Solar body']
+    
+    # Add rebus entries using the new helper methods
+    r = p.rebus()
+    r.add_rebus_entry('PET', [0])  # First cell has "PET" rebus
+    r.add_rebus_entry('STAR', [6])  # 7th cell has "STAR" rebus
+    r.save()
+    
+    # Add some markup
+    m = p.markup()
+    m.markup = [puz.GridMarkup.Circled] + [0] * 8  # Circle first cell
+    m.save()
+    
+    # Test that everything was created correctly
+    assert p.has_rebus()
+    assert p.has_markup()
+    
+    # Test rebus functionality
+    assert r.get_rebus_solution(0) == 'PET'
+    assert r.get_rebus_solution(6) == 'STAR'
+    
+    # Test conversion to v2 text format
+    v2_text = puz.to_text_format(p, 'v2')
+    assert '<REBUS>' in v2_text
+    assert '<MARK>' in v2_text
+    assert 'PET:1' in v2_text
+    assert 'STAR:7' in v2_text
+    
+    # Test that the text can be parsed back
+    p2 = puz.load_text(v2_text)
+    assert p2.has_rebus()
+    assert p2.has_markup()
+    assert p2.rebus().get_rebus_solution(0) == 'PET'
+    assert p2.rebus().get_rebus_solution(6) == 'STAR'
+
+
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*.txt'))
 def test_textfile_roundtrip(filename):
     with open(filename, 'r') as fp:
         orig = fp.read()
         p = puz.read_text(filename)
-        new = puz.to_text_format(p)
+        
+        # Determine version from original file
+        text_version = 'v2' if '<ACROSS PUZZLE v2>' in orig else 'v1'
+        new = puz.to_text_format(p, text_version)
         assert orig == new, '%s did not round-trip' % filename
 
 

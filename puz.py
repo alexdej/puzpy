@@ -711,6 +711,56 @@ class Rebus:
         if self.is_rebus_square(index):
             self.fill[self.table[index] - 1] = value
 
+    def add_rebus_entry(self, solution, cells):
+        """
+        Add a new rebus entry with the given solution for the specified cells.
+        
+        Args:
+            solution (str): The rebus solution text (e.g., "HEART")
+            cells (list): List of cell indices (0-based) where this rebus appears
+        
+        Returns:
+            int: The rebus ID assigned to this entry
+        """
+        # Find the next available rebus ID
+        rebus_id = 0
+        while rebus_id in self.solutions:
+            rebus_id += 1
+            
+        # Store the solution
+        self.solutions[rebus_id] = solution
+        
+        # Mark cells in the table
+        for cell in cells:
+            if 0 <= cell < len(self.table):
+                self.table[cell] = rebus_id + 1
+                
+        return rebus_id
+    
+    def remove_rebus_entry(self, rebus_id):
+        """
+        Remove a rebus entry by ID.
+        
+        Args:
+            rebus_id (int): The rebus ID to remove
+        """
+        if rebus_id in self.solutions:
+            del self.solutions[rebus_id]
+            
+        if rebus_id in self.fill:
+            del self.fill[rebus_id]
+            
+        # Clear table entries for this rebus ID
+        for i, table_value in enumerate(self.table):
+            if table_value == rebus_id + 1:
+                self.table[i] = 0
+    
+    def clear_all_rebus(self):
+        """Clear all rebus entries."""
+        self.solutions.clear()
+        self.fill.clear()
+        self.table = [0] * len(self.table)
+
     def save(self):
         if self.has_rebus():
             # commit changes back to puzzle.extensions
@@ -925,8 +975,12 @@ def from_text_format(s):
         down_clues.extend(line.strip() for line in d['DOWN'].splitlines() if line.strip())
     if 'NOTEPAD' in d:
         p.notes = d['NOTEPAD']
-    if 'REBUS' in d:
-        pass # TODO: text file REBUS
+    # Handle v2-specific sections
+    if file_version == 'v2':
+        if 'REBUS' in d:
+            _parse_rebus_section(p, d['REBUS'])
+        if 'MARK' in d:
+            _parse_mark_section(p, d['MARK'])
     
     if p.solution:
         p.fill = ''.join(c if c == BLACKSQUARE else BLANKSQUARE for c in p.solution)
@@ -944,6 +998,90 @@ def from_text_format(s):
             p.clues[down[i]['clue_index']] = clue
 
     return p
+
+
+def _parse_rebus_section(puzzle, rebus_text):
+    """Parse v2 REBUS section format: SYMBOL:cell1,cell2,cell3"""
+    rebus = puzzle.rebus()
+    rebus_id = 0
+    
+    for line in rebus_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+            
+        if ':' not in line:
+            continue
+            
+        symbol, cells_str = line.split(':', 1)
+        symbol = symbol.strip()
+        
+        # Parse cell positions (1-based in text format)
+        try:
+            cell_positions = [int(x.strip()) - 1 for x in cells_str.split(',') if x.strip()]
+        except ValueError:
+            continue
+            
+        # Store the rebus solution
+        rebus.solutions[rebus_id] = symbol
+        
+        # Mark cells in the rebus table
+        for pos in cell_positions:
+            if 0 <= pos < len(rebus.table):
+                rebus.table[pos] = rebus_id + 1
+                
+        rebus_id += 1
+    
+    # Save the rebus data back to the puzzle
+    rebus.save()
+
+
+def _parse_mark_section(puzzle, mark_text):
+    """Parse v2 MARK section format: TYPE:cell1,cell2,cell3"""
+    markup = puzzle.markup()
+    
+    for line in mark_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+            
+        if ':' not in line:
+            continue
+            
+        mark_type, cells_str = line.split(':', 1)
+        mark_type = mark_type.strip().lower()
+        
+        # Map mark types to GridMarkup values
+        mark_value = 0
+        if mark_type == 'circle':
+            mark_value = GridMarkup.Circled
+        elif mark_type == 'incorrect':
+            mark_value = GridMarkup.Incorrect
+        elif mark_type == 'revealed':
+            mark_value = GridMarkup.Revealed
+        elif mark_type == 'previously-incorrect':
+            mark_value = GridMarkup.PreviouslyIncorrect
+        else:
+            continue  # Unknown mark type
+            
+        # Parse cell positions (1-based in text format)
+        try:
+            cell_positions = [int(x.strip()) - 1 for x in cells_str.split(',') if x.strip()]
+        except ValueError:
+            continue
+            
+        # Ensure markup array is properly sized
+        if not markup.markup or len(markup.markup) != puzzle.width * puzzle.height:
+            markup.markup = [0] * (puzzle.width * puzzle.height)
+            
+        # Mark cells in the markup array
+        for pos in cell_positions:
+            if 0 <= pos < len(markup.markup):
+                markup.markup[pos] = mark_value
+    
+    # Save the markup data back to the puzzle
+    markup.save()
+
 
 def text_file_as_dict(s):
     d = {}
@@ -986,6 +1124,16 @@ def to_text_format(p, text_version='v1'):
         row = p.solution[r*p.width:(r+1)*p.width]
         lines.append(TAB + row)
 
+    # Add v2-specific sections before clues
+    if text_version == 'v2':
+        # Add REBUS section if puzzle has rebus
+        if p.has_rebus():
+            lines.extend(_write_rebus_section(p, TAB))
+            
+        # Add MARK section if puzzle has markup
+        if p.has_markup():
+            lines.extend(_write_mark_section(p, TAB))
+
     # get clues in across/down order
     numbering = p.clue_numbering()
     lines.append('<ACROSS>')
@@ -999,3 +1147,60 @@ def to_text_format(p, text_version='v1'):
     lines.append(p.notes)  # no tab here, idk why
 
     return '\n'.join(lines)
+
+
+def _write_rebus_section(puzzle, tab):
+    """Write v2 REBUS section"""
+    lines = ['<REBUS>']
+    rebus = puzzle.rebus()
+    
+    # Group cells by rebus solution
+    solution_to_cells = {}
+    for i, table_value in enumerate(rebus.table):
+        if table_value > 0:
+            solution_id = table_value - 1
+            if solution_id in rebus.solutions:
+                solution = rebus.solutions[solution_id]
+                if solution not in solution_to_cells:
+                    solution_to_cells[solution] = []
+                solution_to_cells[solution].append(i + 1)  # 1-based for text format
+    
+    # Write each rebus entry
+    for solution, cells in solution_to_cells.items():
+        cells_str = ','.join(map(str, cells))
+        lines.append(tab + f'{solution}:{cells_str}')
+    
+    return lines
+
+
+def _write_mark_section(puzzle, tab):
+    """Write v2 MARK section"""
+    lines = ['<MARK>']
+    markup = puzzle.markup()
+    
+    # Group cells by mark type
+    mark_type_to_cells = {}
+    
+    for i, mark_value in enumerate(markup.markup):
+        if mark_value > 0:
+            mark_type = None
+            if mark_value == GridMarkup.Circled:
+                mark_type = 'circle'
+            elif mark_value == GridMarkup.Incorrect:
+                mark_type = 'incorrect'
+            elif mark_value == GridMarkup.Revealed:
+                mark_type = 'revealed'
+            elif mark_value == GridMarkup.PreviouslyIncorrect:
+                mark_type = 'previously-incorrect'
+            
+            if mark_type:
+                if mark_type not in mark_type_to_cells:
+                    mark_type_to_cells[mark_type] = []
+                mark_type_to_cells[mark_type].append(i + 1)  # 1-based for text format
+    
+    # Write each mark type
+    for mark_type, cells in mark_type_to_cells.items():
+        cells_str = ','.join(map(str, cells))
+        lines.append(tab + f'{mark_type}:{cells_str}')
+    
+    return lines
