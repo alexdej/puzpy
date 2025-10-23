@@ -3,7 +3,7 @@ name = "puzpy"
 description = "python crossword puzzle library"
 readme = { file = "README.md", content-type = "text/markdown" }
 license-files = [ "LICENSE" ]
-version = "0.2.6"
+version = "0.3.0"
 keywords = [ "puz", "crosswords", "crossword", "puzzle", "acrosslite", "xword", "xwords" ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
