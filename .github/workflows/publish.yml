@@ -54,14 +54,14 @@ jobs:
         name: dist
         path: dist
 
-    - name: Publish to TestPyPI (prerelease only)
+    - name: Publish to test.pypi.org (prerelease only)
       if: ${{ github.event.release.prerelease }}
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
         skip-existing: true  # only for test: allow uploading more than once
 
-    - name: Publish to PyPI (release only)
+    - name: Publish to pypi.org (release only)
       if: ${{ !github.event.release.prerelease }}
       uses: pypa/gh-action-pypi-publish@release/v1
 
