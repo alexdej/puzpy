@@ -1,8 +1,6 @@
-# puz.py: Python parser implementation for .puz files
+# puz.py: Python parser for .puz files
 
-Implementation of `.puz` crossword puzzle file parser based on `.puz` file
-format documentation here:
-<http://code.google.com/p/puz/wiki/FileFormat>
+Python library to read and write crossword puzzle files in Across Lite `.puz` and/or `.txt` formats.
 
 ## Example Usage
 
@@ -43,7 +41,7 @@ for row in range(p.height):
 p.fill = 'LAMB' + p.fill[4:]
 p.save('example.puz')
 
-# Convert from Across Lite text format to .puz:
+# New! Convert from Across Lite text format to .puz:
 p2 = puz.read_text('testfiles/text_format_v1.txt')
 p2.save('example2.puz')
 ```
