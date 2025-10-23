@@ -59,6 +59,7 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
+        skip-existing: true  # only for test: allow uploading more than once
 
     - name: Publish to PyPI (release only)
       if: ${{ !github.event.release.prerelease }}
@@ -73,7 +74,7 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: dist
-        path: dist/*
+        path: dist
 
     - uses: softprops/action-gh-release@v2
       with:
