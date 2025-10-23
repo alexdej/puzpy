@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
   push:
     branches: [ master ]
+    tags:
+      - 'v*.*.*'  # triggers on version tag pushes like v1.2.3
   pull_request:
     branches: [ master ]
 
