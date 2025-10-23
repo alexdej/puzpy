@@ -54,7 +54,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref }} # The tag that triggered the workflow
-        release_name: ${{ github.ref }} # Name of the release
+        name: ${{ github.ref_name }} # Name of the release
         prerelease: ${{ contains(github.ref, '-') }} # Marks the release as a pre-release if the tag contains a hyphen
         draft: true # Creates a draft release to allow for review before publishing
         files: 'dist/*'
