@@ -29,6 +29,10 @@ maintainers = [
 ]
 
 
+[tool.setuptools]
+py-modules = ["puz"]
+
+
 [project.urls]
 Repository = "https://github.com/alexdej/puzpy.git"
 Issues = "https://github.com/alexdej/puzpy/issues"
