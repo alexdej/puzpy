@@ -42,6 +42,8 @@ jobs:
     name: Publish python distribution to PyPI
     runs-on: ubuntu-latest
     needs: build-release
+    environment:
+      name: ${{ github.event.release.prerelease && 'testpypi' || 'pypi' }}
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
