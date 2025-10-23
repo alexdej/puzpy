@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 (Oct 23, 2025)
+
+- new Grid helper class to simplify access to clues
+- support for reading and writing files in AcrossLite text format
+- bug fix (courtesy @afontenot) to allow serialized dicts to have ':' in values
+
 ## 0.2.6 (Jun 12, 2024)
 
 - Add NotProvided value to SolutionState enum for puzzles without a
