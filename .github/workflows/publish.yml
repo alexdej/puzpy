@@ -8,6 +8,10 @@ on:
     types: [ published, released, prereleased, edited ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-release:  # copied from build.yml
     name: Build python package
