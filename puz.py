@@ -122,7 +122,7 @@ def read_text(filename):
     """
     with open(filename, 'r', encoding='utf-8', errors='replace') as f:
         return load_text(f.read())
-    
+
 
 def load(data):
     """
@@ -519,7 +519,6 @@ class PuzzleBuffer:
 
 
 # clue numbering helper
-
 def get_grid_numbering(grid, width, height):
     # Add numbers to the grid based on positions of black squares
     def col(index):
@@ -527,7 +526,7 @@ def get_grid_numbering(grid, width, height):
 
     def row(index):
         return int(math.floor(index / width))
-    
+
     def len_across(index):
         for c in range(0, width - col(index)):
             if is_blacksquare(grid[index + c]):
@@ -576,6 +575,7 @@ def get_grid_numbering(grid, width, height):
             if c > lastc:
                 n += 1
     return a, d
+
 
 class DefaultClueNumbering:
     def __init__(self, grid, clues, width, height):
@@ -671,15 +671,15 @@ class Rebus:
         if Extensions.Rebus in self.puzzle.extensions:
             rebus_data = self.puzzle.extensions[Extensions.Rebus]
             self.table = parse_bytes(rebus_data)
-        
+
         if Extensions.RebusSolutions in self.puzzle.extensions:
             raw_solution_data = self.puzzle.extensions[Extensions.RebusSolutions]
             solutions_str = raw_solution_data.decode(puzzle.encoding)
             self.solutions = {
-               int(item[0]): item[1]
+                int(item[0]): item[1]
                 for item in parse_dict(solutions_str).items()
             }
-        
+
         if Extensions.RebusFill in self.puzzle.extensions:
             raw_fill_data = self.puzzle.extensions[Extensions.RebusFill]
             fill_str = raw_fill_data.decode(puzzle.encoding)
@@ -897,9 +897,11 @@ def from_text_format(s):
     d = text_file_as_dict(s)
 
     if 'ACROSS PUZZLE' in d:
-        file_version = 'v1'
+        # file_version = 'v1'
+        pass
     elif 'ACROSS PUZZLE v2' in d:
-        file_version = 'v2'
+        # file_version = 'v2'
+        pass
     else:
         raise PuzzleFormatError('Not a valid Across Lite text puzzle')
 
@@ -926,12 +928,12 @@ def from_text_format(s):
     if 'NOTEPAD' in d:
         p.notes = d['NOTEPAD']
     if 'REBUS' in d:
-        pass # TODO: text file REBUS
-    
+        pass  # TODO: text file REBUS
+
     if p.solution:
         p.fill = ''.join(c if c == BLACKSQUARE else BLANKSQUARE for c in p.solution)
         across, down = get_grid_numbering(p.fill, p.width, p.height)
-        # we have to match puzfile's expected clue ordering or we won't be able to 
+        # we have to match puzfile's expected clue ordering or we won't be able to
         # write the puzzle out as a valid .puz file
         p.clues = [''] * (len(across) + len(down))
         for i in range(len(across)):
@@ -944,6 +946,7 @@ def from_text_format(s):
             p.clues[down[i]['clue_index']] = clue
 
     return p
+
 
 def text_file_as_dict(s):
     d = {}
@@ -962,6 +965,7 @@ def text_file_as_dict(s):
     if k:
         d[k] = '\n'.join(v)
     return d
+
 
 def to_text_format(p, text_version='v1'):
     TAB = '\t'  # most lines begin indented with whitespace

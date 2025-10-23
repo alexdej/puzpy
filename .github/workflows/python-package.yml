@@ -28,5 +28,7 @@ jobs:
         cache: pip
     - name: Install tox
       run: pip install tox
-    - name: Run tox
+    - name: lint (via tox)
+      run: tox -e lint
+    - name: unit tests (via tox)
       run: tox -e py
