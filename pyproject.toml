@@ -4,7 +4,7 @@ description = "python crossword puzzle library"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = "MIT"
 license-files = [ "LICENSE" ]
-version = "0.3.1"
+version = "0.3.2"
 keywords = [ "puz", "crosswords", "crossword", "puzzle", "acrosslite", "xword", "xwords" ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
