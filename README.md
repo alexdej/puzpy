@@ -1,7 +1,8 @@
 # puz.py: Python parser for .puz files
 [![PyPI - Version](https://img.shields.io/pypi/v/puzpy)](https://pypi.org/project/puzpy/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/puzpy)
 ![PyPI - License](https://img.shields.io/pypi/l/puzpy)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/puzpy)
+![GitHub branch check runs](https://img.shields.io/github/check-runs/alexdej/puzpy/master)
 
 
 Python library to read and write crossword puzzle files in Across Lite `.puz` and/or `.txt` formats.
