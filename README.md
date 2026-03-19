@@ -25,41 +25,53 @@ pip install .[dev]
 ```python
 import puz
 
+#
 # Load a puzzle file:
+#
 p = puz.read('testfiles/washpost.puz')
 
-# Print clues with answers:
-numbering = p.clue_numbering()
+#
+# Print all clues and their answers
+#
+clues = p.clue_numbering()
 solution = puz.Grid(p.solution, p.width, p.height)
 
 print('Across')
-for clue in numbering.across:
+for clue in clues.across:
     answer = solution.get_string_for_clue(clue)
     print(clue['num'], clue['clue'], '-', answer)
 
 print('Down')
-for clue in numbering.down:
+for clue in clues.down:
     answer = solution.get_string_for_clue(clue)
     print(clue['num'], clue['clue'], '-', answer)
 
-# Print the grid:
+#
+# Print the puzzle grid
+#
 grid = puz.Grid(p.fill, p.width, p.height)
 for row in range(p.height):
     print(' '.join(grid.get_row(row)))
 
-# Unlock a scrambled solution:
+#
+# Unlock a puzzle that has a locked solution
+#
 p.unlock_solution(7844)
 
-# Print the unscrambed solution grid:
+# Now print the unscrambed solution grid:
 solution = puz.Grid(p.solution, p.width, p.height)
 for row in range(p.height):
     print(' '.join(solution.get_row(row)))
 
+#
 # Save a puzzle with modifications:
-p.fill = 'LAMB' + p.fill[4:]
+#
+p.fill = 'LAMB' + p.fill[:4]
 p.save('example.puz')
 
+#
 # New! Convert from Across Lite text format to .puz:
+#
 p2 = puz.read_text('testfiles/text_format_v1.txt')
 p2.save('example2.puz')
 ```
