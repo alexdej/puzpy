@@ -8,6 +8,18 @@
 
 Python library to read and write crossword puzzle files in Across Lite `.puz` and/or `.txt` formats.
 
+## Installing
+
+### From pypi (recommended)
+```bash skip
+pip install puzpy
+```
+
+### From source (for development)
+```bash skip
+pip install .[dev]
+```
+
 ## Example Usage
 
 ```python
@@ -69,12 +81,14 @@ it can round-trip 100% of them with full fidelity.
 ## Running tests
 [![Build and run tests](https://github.com/alexdej/puzpy/actions/workflows/build.yml/badge.svg)](https://github.com/alexdej/puzpy/actions/workflows/build.yml)
 
+### Unit tests
 ```bash skip
-# Run all tests
-pytest
+pytest -v
+```
 
-# Run lint
-flake8 .
+### lint
+```bash skip
+flake8 . --show-source --statistics
 ```
 
 ## Python version support
