@@ -6,7 +6,7 @@ import glob
 import puz
 
 
-def temp_filename(suffix='puz'):
+def temp_filename(suffix: str = 'puz') -> str:
     # uses NamedTemporaryFile to create a temporary file but then exits the context
     # so as to close the fd and unlink the file. These tests typically want a filename
     # they can write to which doesn't work on every OS when the fd is open.
@@ -14,7 +14,7 @@ def temp_filename(suffix='puz'):
         return tmp.name
 
 
-def test_clue_numbering():
+def test_clue_numbering() -> None:
     p = puz.read('testfiles/washpost.puz')
     clues = p.clue_numbering()
     assert len(p.clues) == len(clues.across) + len(clues.down)
@@ -45,7 +45,7 @@ def test_clue_numbering():
     assert d1['clue'] == p.clues[d1['clue_index']]
 
 
-def test_grid():
+def test_grid() -> None:
     p = puz.read('testfiles/washpost.puz')
     clues = p.clue_numbering()
     a1, d1 = clues.across[0], clues.down[0]
@@ -75,14 +75,14 @@ def test_grid():
         soln.get_range(0, 0, 4, dir='diagonal')
 
 
-def test_diagramless_clue_numbering():
+def test_diagramless_clue_numbering() -> None:
     p = puz.read('testfiles/nyt_diagramless.puz')
     clues = p.clue_numbering()
     assert len(p.clues) == len(clues.across) + len(clues.down)
     assert len(p.clues) > 0
 
 
-def test_is_blacksquare():
+def test_is_blacksquare() -> None:
     assert puz.is_blacksquare('.')
     assert puz.is_blacksquare(':')
     assert not puz.is_blacksquare('#')
@@ -91,7 +91,7 @@ def test_is_blacksquare():
     assert not puz.is_blacksquare('')
     assert not puz.is_blacksquare('A')
     assert not puz.is_blacksquare(0)
-    assert not puz.is_blacksquare(None)
+    assert not puz.is_blacksquare(None)  # type: ignore
 
     assert puz.is_blacksquare(ord('.'))
     assert puz.is_blacksquare(ord(':'))
@@ -99,14 +99,14 @@ def test_is_blacksquare():
     assert not puz.is_blacksquare(ord('A'))
 
 
-def test_extensions():
+def test_extensions() -> None:
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
     assert puz.Extensions.Rebus in p.extensions
     assert puz.Extensions.RebusSolutions in p.extensions
     assert puz.Extensions.Markup in p.extensions
 
 
-def test_rebus():
+def test_rebus() -> None:
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
     assert p.has_rebus()
     r = p.rebus()
@@ -118,7 +118,7 @@ def test_rebus():
     assert r.get_rebus_solution(100) is None
 
 
-def test_markup():
+def test_markup() -> None:
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
     assert p.has_markup()
     m = p.markup()
@@ -130,7 +130,7 @@ def test_markup():
         assert puz.GridMarkup.Circled == m.markup[i]
 
 
-def test_markup_revealed():
+def test_markup_revealed() -> None:
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape_revealed.puz')
     m = p.markup()
     assert m
@@ -142,37 +142,37 @@ def test_markup_revealed():
     assert puz.GridMarkup.Circled & m.markup[7]
 
 
-def test_no_markup():
+def test_no_markup() -> None:
     p = puz.read('testfiles/washpost.puz')
     assert not p.has_markup()
     assert not p.markup().has_markup()
 
 
-def test_puzzle_type():
+def test_puzzle_type() -> None:
     assert puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Normal
     assert puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Normal
     assert puz.read('testfiles/nyt_diagramless.puz').puzzletype == puz.PuzzleType.Diagramless
 
 
-def test_empty_puzzle():
+def test_empty_puzzle() -> None:
     p = puz.Puzzle()
     with pytest.raises(puz.PuzzleFormatError):
         p.load(b'')
 
 
-def test_corrupted_puzzle():
+def test_corrupted_puzzle() -> None:
     p = puz.Puzzle()
     with pytest.raises(puz.PuzzleFormatError):
         p.load(b'not a puzzle')
 
 
-def test_truncated_puzzle():
+def test_truncated_puzzle() -> None:
     # has the magic string but too short for the full header
     with pytest.raises(puz.PuzzleFormatError):
         puz.load(b'\x00\x00' + puz.ACROSSDOWN + b'\x00' * 5)
 
 
-def test_checksum_errors():
+def test_checksum_errors() -> None:
     with open('testfiles/washpost.puz', 'rb') as fp:
         data = fp.read()
 
@@ -198,7 +198,7 @@ def test_checksum_errors():
         puz.load(bytes(bad))
 
 
-def test_extension_checksum_error():
+def test_extension_checksum_error() -> None:
     data = bytearray(puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz').tobytes())
     pos = data.index(b'GRBS')
     data[pos + 6] ^= 0xFF  # flip a byte in the GRBS extension checksum
@@ -206,7 +206,7 @@ def test_extension_checksum_error():
         puz.load(bytes(data))
 
 
-def test_junk_at_end_of_puzzle():
+def test_junk_at_end_of_puzzle() -> None:
     with open('testfiles/washpost.puz', 'rb') as fp:
         data = fp.read() + b'\r\n\r\n'
     p = puz.Puzzle()
@@ -214,19 +214,19 @@ def test_junk_at_end_of_puzzle():
     assert p.postscript == b'\r\n\r\n'
 
 
-def test_v1_4():
+def test_v1_4() -> None:
     p = puz.read('testfiles/nyt_v1_4.puz')
     assert p.version_tuple() == (1, 4)
 
 
-def test_v2_unicode():
+def test_v2_unicode() -> None:
     p = puz.read('testfiles/unicode.puz')
     assert p.title == u'\u2694\ufe0f'
     assert p.encoding == 'UTF-8'
     assert p.version_tuple() == (2, 0)
 
 
-def test_v2_upgrade():
+def test_v2_upgrade() -> None:
     p = puz.read('testfiles/washpost.puz')
     p.title = u'\u2694\ufe0f'
     p.set_version('2.0')
@@ -237,7 +237,7 @@ def test_v2_upgrade():
     assert p2.version_tuple() == (2, 0)
 
 
-def test_save_empty_puzzle():
+def test_save_empty_puzzle() -> None:
     filename = temp_filename()
     try:
         p = puz.Puzzle()
@@ -250,7 +250,7 @@ def test_save_empty_puzzle():
         os.unlink(filename)
 
 
-def test_save_small_puzzle():
+def test_save_small_puzzle() -> None:
     filename = temp_filename()
     try:
         p = puz.Puzzle()
@@ -272,7 +272,7 @@ def test_save_small_puzzle():
         os.unlink(filename)
 
 
-def test_rebus_player_flow():
+def test_rebus_player_flow() -> None:
     # simulate a player opening a rebus puzzle, entering fill, and saving
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
     r = p.rebus()
@@ -289,7 +289,7 @@ def test_rebus_player_flow():
         assert r2.get_rebus_fill(i) == 'STAR'
 
 
-def test_full_construction_roundtrip():
+def test_full_construction_roundtrip() -> None:
     # build nyt_rebus_with_notes_and_shape.puz from scratch and compare byte-for-byte
     filename = 'testfiles/nyt_rebus_with_notes_and_shape.puz'
     with open(filename, 'rb') as fp:
@@ -322,7 +322,7 @@ def test_full_construction_roundtrip():
     assert orig == p.tobytes()
 
 
-def test_rebus_constructor_flow():
+def test_rebus_constructor_flow() -> None:
     # simulate a constructor building a puzzle with a rebus square from scratch
     p = puz.Puzzle()
     p.width = 3
@@ -343,7 +343,7 @@ def test_rebus_constructor_flow():
     p2.check_answers('ABCDEFGHI')
 
 
-def test_scramble_functions():
+def test_scramble_functions() -> None:
     assert 'MLOOPKJ' == puz.scramble_string('AEBFCDG', 1234)
     assert 'MOP..KLOJ' == puz.scramble_solution('ABC..DEFG', 3, 3, 1234)
     assert 'AEBFCDG' == puz.unscramble_string('MLOOPKJ', 1234)
@@ -354,12 +354,12 @@ def test_scramble_functions():
     assert a == unscrambled
 
 
-def test_locked_bit():
+def test_locked_bit() -> None:
     assert not puz.read('testfiles/washpost.puz').is_solution_locked()
     assert puz.read('testfiles/nyt_locked.puz').is_solution_locked()
 
 
-def test_unlock():
+def test_unlock() -> None:
     p = puz.read('testfiles/nyt_locked.puz')
     assert p.is_solution_locked()
     assert not p.unlock_solution(1234)
@@ -369,7 +369,7 @@ def test_unlock():
     assert 'LAKEONTARIO' in p.solution
 
 
-def test_unlock_relock():
+def test_unlock_relock() -> None:
     with open('testfiles/nyt_locked.puz', 'rb') as fp:
         orig = fp.read()
     p = puz.read('testfiles/nyt_locked.puz')
@@ -380,7 +380,7 @@ def test_unlock_relock():
     assert orig == new, 'nyt_locked.puz did not round-trip'
 
 
-def test_check_answers_locked():
+def test_check_answers_locked() -> None:
     p1 = puz.read('testfiles/nyt_locked.puz')
     p2 = puz.read('testfiles/nyt_locked.puz')
     p1.unlock_solution(7844)
@@ -388,7 +388,7 @@ def test_check_answers_locked():
     assert p2.check_answers(p1.solution)
 
 
-def test_unlock_relock_diagramless():
+def test_unlock_relock_diagramless() -> None:
     with open('testfiles/nyt_diagramless.puz', 'rb') as fp:
         orig = fp.read()
     p = puz.read('testfiles/nyt_diagramless.puz')
@@ -400,7 +400,7 @@ def test_unlock_relock_diagramless():
     assert orig == new, 'nyt_diagramless.puz did not round-trip'
 
 
-def test_text_format():
+def test_text_format() -> None:
     p = puz.read_text('testfiles/text_format_v1.txt')
     assert p.title == 'Politics: Who, what, where and why'
     assert p.author == 'Created by Avalonian'
@@ -426,7 +426,7 @@ def test_text_format():
     assert numbering.down[-1]['clue'] == 'Tax break savings account'
 
 
-def test_convert_text_to_puz():
+def test_convert_text_to_puz() -> None:
     p = puz.read_text('testfiles/text_format_v1.txt')
     bytes = p.tobytes()
     p2 = puz.load(bytes)
@@ -444,7 +444,7 @@ def test_convert_text_to_puz():
     assert len(numbering.down) == len(p2.clue_numbering().down)
 
 
-def test_convert_puz_to_text():
+def test_convert_puz_to_text() -> None:
     p = puz.read('testfiles/washpost.puz')
     text = puz.to_text_format(p)
     p2 = puz.load_text(text)
@@ -462,30 +462,30 @@ def test_convert_puz_to_text():
     assert len(numbering.down) == len(p2.clue_numbering().down)
 
 
-def test_invalid_text_format():
+def test_invalid_text_format() -> None:
     with pytest.raises(puz.PuzzleFormatError):
         puz.from_text_format('not a valid puzzle')
 
 
-def test_to_text_format_custom_version():
+def test_to_text_format_custom_version() -> None:
     p = puz.read('testfiles/washpost.puz')
     text = puz.to_text_format(p, text_version='v2')
     assert text.startswith('<ACROSS PUZZLE v2>')
 
 
-def test_to_text_format_invalid_version():
+def test_to_text_format_invalid_version() -> None:
     p = puz.read('testfiles/washpost.puz')
     with pytest.raises(ValueError):
-        puz.to_text_format(p, text_version=None)
+        puz.to_text_format(p, text_version=None)  # type: ignore
 
 
-def test_rebus_fill_returns_none_for_non_rebus_square():
+def test_rebus_fill_returns_none_for_non_rebus_square() -> None:
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
     assert p.rebus().get_rebus_fill(0) is None
 
 
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*.txt'))
-def test_textfile_roundtrip(filename):
+def test_textfile_roundtrip(filename: str) -> None:
     with open(filename, 'r') as fp:
         orig = fp.read()
         p = puz.read_text(filename)
@@ -493,7 +493,7 @@ def test_textfile_roundtrip(filename):
         assert orig == new, '%s did not round-trip' % filename
 
 
-def test_helpers_roundtrip():
+def test_helpers_roundtrip() -> None:
     filename = 'testfiles/nyt_rebus_with_notes_and_shape.puz'
     with open(filename, 'rb') as fp:
         orig = fp.read()
@@ -503,7 +503,7 @@ def test_helpers_roundtrip():
     assert orig == p.tobytes()
 
 
-def test_nonrebus_helpers_roundtrip():
+def test_nonrebus_helpers_roundtrip() -> None:
     filename = 'testfiles/washpost.puz'
     with open(filename, 'rb') as fp:
         orig = fp.read()
@@ -513,12 +513,12 @@ def test_nonrebus_helpers_roundtrip():
     assert orig == p.tobytes()
 
 
-def _not_bad(files):
-    return [f for f in files if not f.endswith('_bad.puz')]
+def _not_bad(filenames: list[str]) -> list[str]:
+    return [f for f in filenames if not f.endswith('_bad.puz')]
 
 
 @pytest.mark.parametrize('filename', _not_bad(glob.glob('testfiles/*.puz')))
-def test_puzfile_roundtrip(filename):
+def test_puzfile_roundtrip(filename: str) -> None:
     # test that a .puz file can be read and then written back out without any changes to the bytes
     # purposely doesn't touch markup or rebus to ensure we roundtrip bytes even when the helpers aren't instantiated
     with open(filename, 'rb') as fp:
@@ -529,7 +529,7 @@ def test_puzfile_roundtrip(filename):
 
 
 @pytest.mark.parametrize('filename', _not_bad(glob.glob('testfiles/*.puz')))
-def test_puzfile_roundtrip_with_helpers(filename):
+def test_puzfile_roundtrip_with_helpers(filename: str) -> None:
     # variation on the roundtrip test that also instantiates the Rebus and Markup
     # helpers to verify that their save methods roundtrip properly
     with open(filename, 'rb') as fp:
@@ -542,6 +542,6 @@ def test_puzfile_roundtrip_with_helpers(filename):
 
 
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*_bad.puz'))
-def test_bad_puzfile_raises_puzzle_format_error(filename):
+def test_bad_puzfile_raises_puzzle_format_error(filename: str) -> None:
     with pytest.raises(puz.PuzzleFormatError):
         puz.read(filename)
