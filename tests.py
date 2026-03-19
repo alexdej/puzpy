@@ -79,13 +79,30 @@ def test_markup():
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
     assert p.has_markup()
     m = p.markup()
+    assert m
+    # this puzzle has 5 circled cells
+    assert len(m.get_markup_squares()) == 5
     for i in m.get_markup_squares():
-        assert puz.GridMarkup.Circled == m.markup[i] and m.is_markup_square(i)
+        assert m.is_markup_square(i)
+        assert puz.GridMarkup.Circled == m.markup[i]
 
+
+def test_markup_revealed():
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape_revealed.puz')
+    m = p.markup()
+    assert m
+    # all the cells in this puzzle have been marked Revealed so check that
+    for i in m.get_markup_squares():
+        assert m.is_markup_square(i)
+        assert puz.GridMarkup.Revealed & m.markup[i]
+    # also check that at least one of the Circled cells is marked
+    assert puz.GridMarkup.Circled & m.markup[7]
+
+
+def test_no_markup():
     p = puz.read('testfiles/washpost.puz')
     assert not p.has_markup()
-    m = p.markup()
-    assert not m.has_markup()
+    assert not p.markup().has_markup()
 
 
 def test_puzzle_type():
@@ -170,6 +187,77 @@ def test_save_small_puzzle():
         assert p.fill == p2.fill
     finally:
         os.unlink(filename)
+
+
+def test_rebus_player_flow():
+    # simulate a player opening a rebus puzzle, entering fill, and saving
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+    r = p.rebus()
+    assert r.has_rebus()
+
+    assert 3 == len(r.get_rebus_squares())
+    for i in r.get_rebus_squares():
+        r.set_rebus_fill(i, 'STAR')
+
+    # round-trip and verify fill is preserved
+    p2 = puz.load(p.tobytes())
+    r2 = p2.rebus()
+    for i in r.get_rebus_squares():
+        assert r2.get_rebus_fill(i) == 'STAR'
+
+
+def test_full_construction_roundtrip():
+    # build nyt_rebus_with_notes_and_shape.puz from scratch and compare byte-for-byte
+    filename = 'testfiles/nyt_rebus_with_notes_and_shape.puz'
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+    ref = puz.read(filename)
+
+    p = puz.Puzzle()
+    p.title = ref.title
+    p.author = ref.author
+    p.copyright = ref.copyright
+    p.notes = ref.notes
+    p.width = ref.width
+    p.height = ref.height
+    p.solution = ref.solution
+    p.fill = ref.fill
+    p.clues = ref.clues
+    # unk fields needed only since we're doing a byte-for-byte comparison
+    p.unk1 = ref.unk1
+    p.unk2 = ref.unk2
+
+    r = p.rebus()
+    r.solutions[1] = 'STAR'
+    r.table[22] = r.table[112] = r.table[202] = 2
+
+    m = p.markup()
+    m.markup = [0] * (p.width * p.height)
+    for i in [7, 47, 56, 168, 177]:
+        m.markup[i] = puz.GridMarkup.Circled
+
+    assert orig == p.tobytes()
+
+
+def test_rebus_constructor_flow():
+    # simulate a constructor building a puzzle with a rebus square from scratch
+    p = puz.Puzzle()
+    p.width = 3
+    p.height = 3
+    p.solution = 'ABCDEFGHI'
+    p.fill = '---------'
+    p.clues = ['clue'] * 6
+
+    r = p.rebus()
+    r.solutions[0] = 'STAR'
+    r.table[4] = 1  # center square, key 0 + 1
+
+    p2 = puz.load(p.tobytes())
+    assert p2.rebus().is_rebus_square(4)
+    assert p2.rebus().get_rebus_solution(4) == 'STAR'
+    assert not p2.rebus().is_rebus_square(0)
+
+    p2.check_answers('ABCDEFGHI')
 
 
 def test_scramble_functions():
@@ -300,15 +388,55 @@ def test_textfile_roundtrip(filename):
         assert orig == new, '%s did not round-trip' % filename
 
 
-@pytest.mark.parametrize('filename', glob.glob('testfiles/*.puz'))
+def test_helpers_roundtrip():
+    filename = 'testfiles/nyt_rebus_with_notes_and_shape.puz'
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+    p = puz.read(filename)
+    p.rebus()
+    p.markup()
+    assert orig == p.tobytes()
+
+
+def test_nonrebus_helpers_roundtrip():
+    filename = 'testfiles/washpost.puz'
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+    p = puz.read(filename)
+    p.has_rebus()   # side effect: instantiates Rebus helper
+    p.has_markup()  # side effect: instantiates Markup helper
+    assert orig == p.tobytes()
+
+
+def _not_bad(files):
+    return [f for f in files if not f.endswith('_bad.puz')]
+
+
+@pytest.mark.parametrize('filename', _not_bad(glob.glob('testfiles/*.puz')))
 def test_puzfile_roundtrip(filename):
-    is_bad = filename.endswith('_bad.puz')
-    if is_bad:
-        with pytest.raises(puz.PuzzleFormatError):
-            puz.read(filename)
-    else:
-        with open(filename, 'rb') as fp:
-            orig = fp.read()
-            p = puz.read(filename)
-            new = p.tobytes()
-            assert orig == new, '%s did not round-trip' % filename
+    # test that a .puz file can be read and then written back out without any changes to the bytes
+    # purposely doesn't touch markup or rebus to ensure we roundtrip bytes even when the helpers aren't instantiated
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+        p = puz.read(filename)
+        new = p.tobytes()
+        assert orig == new, '%s did not round-trip' % filename
+
+
+@pytest.mark.parametrize('filename', _not_bad(glob.glob('testfiles/*.puz')))
+def test_puzfile_roundtrip_with_helpers(filename):
+    # variation on the roundtrip test that also instantiates the Rebus and Markup
+    # helpers to verify that their save methods roundtrip properly
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+        p = puz.read(filename)
+        p.has_rebus()    # side effect: instantiates Rebus helper
+        p.has_markup()   # side effect: instantiates Markup helper
+        new = p.tobytes()
+        assert orig == new, '%s did not round-trip' % filename
+
+
+@pytest.mark.parametrize('filename', glob.glob('testfiles/*_bad.puz'))
+def test_bad_puzfile_raises_puzzle_format_error(filename):
+    with pytest.raises(puz.PuzzleFormatError):
+        puz.read(filename)

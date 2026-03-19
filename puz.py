@@ -700,10 +700,12 @@ class Rebus:
         if self.has_rebus():
             # commit changes back to puzzle.extensions
             self.puzzle.extensions[Extensions.Rebus] = pack_bytes(self.table)
-            rebus_solutions = self.puzzle.encode(dict_to_string(self.solutions))
-            self.puzzle.extensions[Extensions.RebusSolutions] = rebus_solutions
-            rebus_fill = self.puzzle.encode(dict_to_string(self.fill))
-            self.puzzle.extensions[Extensions.RebusFill] = rebus_fill
+            if self.solutions:
+                rebus_solutions = self.puzzle.encode(rebus_dict_to_string(self.solutions))
+                self.puzzle.extensions[Extensions.RebusSolutions] = rebus_solutions
+            if self.fill:
+                rebus_fill = self.puzzle.encode(rebus_dict_to_string(self.fill))
+                self.puzzle.extensions[Extensions.RebusFill] = rebus_fill
 
 
 class Markup:
@@ -876,6 +878,11 @@ def parse_dict(s):
 
 def dict_to_string(d):
     return ';'.join(':'.join(map(str, [k, v])) for k, v in d.items()) + ';'
+
+
+def rebus_dict_to_string(d):
+    # Across Lite format right-aligns keys in a 2-char field: ' 0:VAL;', '13:VAL;'
+    return ';'.join(f'{k:>2}:{v}' for k, v in d.items()) + ';'
 
 
 def from_text_format(s):
