@@ -3,22 +3,11 @@ import operator
 import math
 import string
 import struct
-import sys
 
 __title__ = 'puzpy'
-__version__ = '0.3.2'
+__version__ = '0.4.0'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2009 Alex DeJarnatt'
-
-
-PY3 = sys.version_info[0] >= 3
-
-if PY3:
-    str = str
-    range = range
-else:
-    str = unicode  # noqa: F821
-    range = xrange  # noqa: F821
 
 HEADER_FORMAT = '''<
              H 11s        xH

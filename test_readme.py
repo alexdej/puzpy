@@ -1,12 +1,15 @@
-# # puz.py: Python parser implementation for .puz files
+# # puz.py: Python parser for .puz files
+# [![PyPI - Version](https://img.shields.io/pypi/v/puzpy)](https://pypi.org/project/puzpy/)
+# ![PyPI - Downloads](https://img.shields.io/pypi/dm/puzpy)
+# ![PyPI - License](https://img.shields.io/pypi/l/puzpy)
+# ![GitHub branch check runs](https://img.shields.io/github/check-runs/alexdej/puzpy/master)
 # 
-# Implementation of `.puz` crossword puzzle file parser based on `.puz` file
-# format documentation here:
-# <http://code.google.com/p/puz/wiki/FileFormat>
+# 
+# Python library to read and write crossword puzzle files in Across Lite `.puz` and/or `.txt` formats.
 # 
 # ## Example Usage
 # 
-def test_line_8():
+def test_line_11():
     import puz
     
     # Load a puzzle file:
@@ -43,7 +46,7 @@ def test_line_8():
     p.fill = 'LAMB' + p.fill[4:]
     p.save('example.puz')
     
-    # Convert from Across Lite text format to .puz:
+    # New! Convert from Across Lite text format to .puz:
     p2 = puz.read_text('testfiles/text_format_v1.txt')
     p2.save('example2.puz')
 
@@ -63,20 +66,15 @@ def test_line_8():
 # it can round-trip 100% of them with full fidelity.
 # 
 # ## Running tests
+# [![Build and run tests](https://github.com/alexdej/puzpy/actions/workflows/build.yml/badge.svg)](https://github.com/alexdej/puzpy/actions/workflows/build.yml)
 # 
-# To run the full suite of tests:
-# ```tox```
-# 
-# To run tests using the currently installed version:
+# To run all tests:
 # ```pytest```
 # 
-# To run a subset of tests on python 2.7:
-# ```python2 -m unittest tests```
-# 
 # ## Python version support
+# ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/puzpy)
 # 
-# All currently supported python3 versions are supported. Python 2.7 was supported, 
-# and may still work, though ongoing support is not guaranteed. 
+# Python >=3.8 required. For python 2.7 use `puzpy==0.2.6`
 # 
 # ## Resources
 # 

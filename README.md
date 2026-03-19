@@ -68,20 +68,13 @@ it can round-trip 100% of them with full fidelity.
 ## Running tests
 [![Build and run tests](https://github.com/alexdej/puzpy/actions/workflows/build.yml/badge.svg)](https://github.com/alexdej/puzpy/actions/workflows/build.yml)
 
-To run the full suite of tests:
-```tox```
-
-To run tests using the currently installed version:
+To run all tests:
 ```pytest```
-
-To run a subset of tests on python 2.7:
-```python2 -m unittest tests```
 
 ## Python version support
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/puzpy)
 
-All currently supported python3 versions are supported. Python 2.7 was supported, 
-and may still work, though ongoing support is not guaranteed. 
+Python >=3.8 required. For python 2.7 use `puzpy==0.2.6`
 
 ## Resources
 
