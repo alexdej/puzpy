@@ -44,9 +44,35 @@ def test_clue_numbering():
 
     assert d1['clue'] == p.clues[d1['clue_index']]
 
+
+def test_grid():
+    p = puz.read('testfiles/washpost.puz')
+    clues = p.clue_numbering()
+    a1, d1 = clues.across[0], clues.down[0]
     soln = puz.Grid(p.solution, p.width, p.height)
+
+    # 1-Across (LAMB) and 1-Down (LOFT) both start at index 0 and have length 4
+    assert clues.len_across(0) == 4
+    assert clues.len_down(0) == 4
+
+    # words that run to the grid edge (no terminating black square)
+    edge_across = next(e for e in clues.across if e['col'] + e['len'] == p.width)
+    assert clues.len_across(edge_across['cell']) == edge_across['len']
+    edge_down = next(e for e in clues.down if e['row'] + e['len'] == p.height)
+    assert clues.len_down(edge_down['cell']) == edge_down['len']
+
     assert 'LAMB' == soln.get_string_for_clue(a1)
     assert 'LOFT' == soln.get_string_for_clue(d1)
+
+    assert soln.get_cell(0, 0) == 'L'
+    assert soln.get_column(0)[0] == 'L'
+    assert soln.get_string(0, 0, 4) == 'LAMB'
+    assert soln.get_string_across(0, 0, 4) == 'LAMB'
+    assert soln.get_string_down(0, 0, 4) == 'LOFT'
+    assert soln.get_string(0, 0, 4, dir='down') == 'LOFT'
+
+    with pytest.raises(AssertionError):
+        soln.get_range(0, 0, 4, dir='diagonal')
 
 
 def test_diagramless_clue_numbering():
@@ -54,6 +80,23 @@ def test_diagramless_clue_numbering():
     clues = p.clue_numbering()
     assert len(p.clues) == len(clues.across) + len(clues.down)
     assert len(p.clues) > 0
+
+
+def test_is_blacksquare():
+    assert puz.is_blacksquare('.')
+    assert puz.is_blacksquare(':')
+    assert not puz.is_blacksquare('#')
+    assert not puz.is_blacksquare('-')
+    assert not puz.is_blacksquare(' ')
+    assert not puz.is_blacksquare('')
+    assert not puz.is_blacksquare('A')
+    assert not puz.is_blacksquare(0)
+    assert not puz.is_blacksquare(None)
+
+    assert puz.is_blacksquare(ord('.'))
+    assert puz.is_blacksquare(ord(':'))
+    assert not puz.is_blacksquare(ord('#'))
+    assert not puz.is_blacksquare(ord('A'))
 
 
 def test_extensions():
@@ -121,6 +164,46 @@ def test_corrupted_puzzle():
     p = puz.Puzzle()
     with pytest.raises(puz.PuzzleFormatError):
         p.load(b'not a puzzle')
+
+
+def test_truncated_puzzle():
+    # has the magic string but too short for the full header
+    with pytest.raises(puz.PuzzleFormatError):
+        puz.load(b'\x00\x00' + puz.ACROSSDOWN + b'\x00' * 5)
+
+
+def test_checksum_errors():
+    with open('testfiles/washpost.puz', 'rb') as fp:
+        data = fp.read()
+
+    # header starts 2 bytes before ACROSSDOWN magic string
+    base = data.index(puz.ACROSSDOWN) - 2
+
+    # corrupt stored global checksum
+    bad = bytearray(data)
+    bad[base] ^= 0xFF
+    with pytest.raises(puz.PuzzleFormatError, match='global'):
+        puz.load(bytes(bad))
+
+    # corrupt stored header checksum — global still passes
+    bad = bytearray(data)
+    bad[base + 14] ^= 0xFF
+    with pytest.raises(puz.PuzzleFormatError, match='header'):
+        puz.load(bytes(bad))
+
+    # corrupt stored magic checksum — global and header still pass
+    bad = bytearray(data)
+    bad[base + 16] ^= 0xFF
+    with pytest.raises(puz.PuzzleFormatError, match='magic'):
+        puz.load(bytes(bad))
+
+
+def test_extension_checksum_error():
+    data = bytearray(puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz').tobytes())
+    pos = data.index(b'GRBS')
+    data[pos + 6] ^= 0xFF  # flip a byte in the GRBS extension checksum
+    with pytest.raises(puz.PuzzleFormatError, match='extension'):
+        puz.load(bytes(data))
 
 
 def test_junk_at_end_of_puzzle():
@@ -377,6 +460,28 @@ def test_convert_puz_to_text():
     numbering = p.clue_numbering()
     assert len(numbering.across) == len(p2.clue_numbering().across)
     assert len(numbering.down) == len(p2.clue_numbering().down)
+
+
+def test_invalid_text_format():
+    with pytest.raises(puz.PuzzleFormatError):
+        puz.from_text_format('not a valid puzzle')
+
+
+def test_to_text_format_custom_version():
+    p = puz.read('testfiles/washpost.puz')
+    text = puz.to_text_format(p, text_version='v2')
+    assert text.startswith('<ACROSS PUZZLE v2>')
+
+
+def test_to_text_format_invalid_version():
+    p = puz.read('testfiles/washpost.puz')
+    with pytest.raises(ValueError):
+        puz.to_text_format(p, text_version=None)
+
+
+def test_rebus_fill_returns_none_for_non_rebus_square():
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+    assert p.rebus().get_rebus_fill(0) is None
 
 
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*.txt'))
