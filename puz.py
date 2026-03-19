@@ -850,6 +850,8 @@ def restore(s, t):
 
 
 def is_blacksquare(c):
+    if isinstance(c, int):
+        c = chr(c)
     return c in [BLACKSQUARE, BLACKSQUARE2]
 
 

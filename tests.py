@@ -43,7 +43,7 @@ def test_clue_numbering():
     assert d1['len'] == 4
 
     assert d1['clue'] == p.clues[d1['clue_index']]
-    
+
 
 def test_grid():
     p = puz.read('testfiles/washpost.puz')
@@ -80,6 +80,23 @@ def test_diagramless_clue_numbering():
     clues = p.clue_numbering()
     assert len(p.clues) == len(clues.across) + len(clues.down)
     assert len(p.clues) > 0
+
+
+def test_is_blacksquare():
+    assert puz.is_blacksquare('.')
+    assert puz.is_blacksquare(':')
+    assert not puz.is_blacksquare('#')
+    assert not puz.is_blacksquare('-')
+    assert not puz.is_blacksquare(' ')
+    assert not puz.is_blacksquare('')
+    assert not puz.is_blacksquare('A')
+    assert not puz.is_blacksquare(0)
+    assert not puz.is_blacksquare(None)
+
+    assert puz.is_blacksquare(ord('.'))
+    assert puz.is_blacksquare(ord(':'))
+    assert not puz.is_blacksquare(ord('#'))
+    assert not puz.is_blacksquare(ord('A'))
 
 
 def test_extensions():
