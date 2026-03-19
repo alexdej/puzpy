@@ -60,11 +60,12 @@ jobs:
     - name: Run coverage
       run: |
         coverage run -m pytest
-        coverage html
+        coverage html --directory site/coverage
+        coverage json -o site/coverage/coverage.json
     - name: Upload pages artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: htmlcov/
+        path: site/
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
