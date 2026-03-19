@@ -1,5 +1,4 @@
 import os
-import sys
 import tempfile
 import pytest
 import glob
@@ -313,5 +312,3 @@ def test_puzfile_roundtrip(filename):
             p = puz.read(filename)
             new = p.tobytes()
             assert orig == new, '%s did not round-trip' % filename
-
-
