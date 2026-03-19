@@ -323,13 +323,30 @@ def test_nonrebus_helpers_roundtrip():
 def _not_bad(files):
     return [f for f in files if not f.endswith('_bad.puz')]
 
+
 @pytest.mark.parametrize('filename', _not_bad(glob.glob('testfiles/*.puz')))
 def test_puzfile_roundtrip(filename):
+    # test that a .puz file can be read and then written back out without any changes to the bytes
+    # purposely doesn't touch markup or rebus to ensure we roundtrip bytes even when the helpers aren't instantiated
     with open(filename, 'rb') as fp:
         orig = fp.read()
         p = puz.read(filename)
         new = p.tobytes()
         assert orig == new, '%s did not round-trip' % filename
+
+
+@pytest.mark.parametrize('filename', _not_bad(glob.glob('testfiles/*.puz')))
+def test_puzfile_roundtrip_with_helpers(filename):
+    # variation on the roundtrip test that also instantiates the Rebus and Markup
+    # helpers to verify that their save methods roundtrip properly
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+        p = puz.read(filename)
+        p.has_rebus()    # side effect: instantiates Rebus helper
+        p.has_markup()   # side effect: instantiates Markup helper
+        new = p.tobytes()
+        assert orig == new, '%s did not round-trip' % filename
+
 
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*_bad.puz'))
 def test_bad_puzfile_raises_puzzle_format_error(filename):
