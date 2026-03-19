@@ -310,6 +310,16 @@ def test_helpers_roundtrip():
     assert orig == p.tobytes()
 
 
+def test_nonrebus_helpers_roundtrip():
+    filename = 'testfiles/washpost.puz'
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+    p = puz.read(filename)
+    p.has_rebus()   # side effect: instantiates Rebus helper
+    p.has_markup()  # side effect: instantiates Markup helper
+    assert orig == p.tobytes()
+
+
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*.puz'))
 def test_puzfile_roundtrip(filename):
     is_bad = filename.endswith('_bad.puz')
