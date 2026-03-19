@@ -696,13 +696,29 @@ class Rebus(PuzzleHelper):
     def get_rebus_squares(self) -> list[int]:
         return [i for i, b in enumerate(self.table) if b]
 
+    def add_rebus_solution(self, solution: str) -> int:
+        index = next((i for i, s in self.solutions.items() if s == solution), -1)
+        if index < 0:
+            index = len(self.solutions)  # add to end of solutions
+            self.solutions[index] = solution
+        return index
+
     def get_rebus_solution(self, index: int) -> str | None:
         if self.is_rebus_square(index):
+            # rebus value is 1-indexed because 0 is reserved for non-rebus squares
+            # so we need to subtract 1 to get the correct solution from the map
             return self.solutions[self.table[index] - 1]
         return None
+    
+    def set_rebus_solution(self, index: int, solution: str) -> None:
+        if self.is_rebus_square(index):
+            solution_index = self.add_rebus_solution(solution)
+            self.table[index] = solution_index + 1
 
     def get_rebus_fill(self, index: int) -> str | None:
         if self.is_rebus_square(index):
+            # rebus value is 1-indexed because 0 is reserved for non-rebus squares
+            # so we need to subtract 1 to get the correct fill from the map
             return self.fill[self.table[index] - 1]
         return None
 
