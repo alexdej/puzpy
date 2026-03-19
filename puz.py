@@ -700,10 +700,10 @@ class Rebus:
         if self.has_rebus():
             # commit changes back to puzzle.extensions
             self.puzzle.extensions[Extensions.Rebus] = pack_bytes(self.table)
-            rebus_solutions = self.puzzle.encode(dict_to_string(self.solutions))
+            rebus_solutions = self.puzzle.encode(rebus_dict_to_string(self.solutions))
             self.puzzle.extensions[Extensions.RebusSolutions] = rebus_solutions
             if self.fill or Extensions.RebusFill in self.puzzle.extensions:
-                rebus_fill = self.puzzle.encode(dict_to_string(self.fill))
+                rebus_fill = self.puzzle.encode(rebus_dict_to_string(self.fill))
                 self.puzzle.extensions[Extensions.RebusFill] = rebus_fill
 
 

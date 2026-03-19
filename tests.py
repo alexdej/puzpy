@@ -300,6 +300,16 @@ def test_textfile_roundtrip(filename):
         assert orig == new, '%s did not round-trip' % filename
 
 
+def test_helpers_roundtrip():
+    filename = 'testfiles/nyt_rebus_with_notes_and_shape.puz'
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+    p = puz.read(filename)
+    p.rebus()
+    p.markup()
+    assert orig == p.tobytes()
+
+
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*.puz'))
 def test_puzfile_roundtrip(filename):
     is_bad = filename.endswith('_bad.puz')
