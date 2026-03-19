@@ -5,7 +5,7 @@ import string
 import struct
 
 __title__ = 'puzpy'
-__version__ = '0.4.0'
+__version__ = '0.4.2'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2009 Alex DeJarnatt'
 
