@@ -43,10 +43,36 @@ def test_clue_numbering():
     assert d1['len'] == 4
 
     assert d1['clue'] == p.clues[d1['clue_index']]
+    
 
+def test_grid():
+    p = puz.read('testfiles/washpost.puz')
+    clues = p.clue_numbering()
+    a1, d1 = clues.across[0], clues.down[0]
     soln = puz.Grid(p.solution, p.width, p.height)
+
+    # 1-Across (LAMB) and 1-Down (LOFT) both start at index 0 and have length 4
+    assert clues.len_across(0) == 4
+    assert clues.len_down(0) == 4
+
+    # words that run to the grid edge (no terminating black square)
+    edge_across = next(e for e in clues.across if e['col'] + e['len'] == p.width)
+    assert clues.len_across(edge_across['cell']) == edge_across['len']
+    edge_down = next(e for e in clues.down if e['row'] + e['len'] == p.height)
+    assert clues.len_down(edge_down['cell']) == edge_down['len']
+
     assert 'LAMB' == soln.get_string_for_clue(a1)
     assert 'LOFT' == soln.get_string_for_clue(d1)
+
+    assert soln.get_cell(0, 0) == 'L'
+    assert soln.get_column(0)[0] == 'L'
+    assert soln.get_string(0, 0, 4) == 'LAMB'
+    assert soln.get_string_across(0, 0, 4) == 'LAMB'
+    assert soln.get_string_down(0, 0, 4) == 'LOFT'
+    assert soln.get_string(0, 0, 4, dir='down') == 'LOFT'
+
+    with pytest.raises(AssertionError):
+        soln.get_range(0, 0, 4, dir='diagonal')
 
 
 def test_diagramless_clue_numbering():
