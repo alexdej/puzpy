@@ -127,6 +127,8 @@ def test_markup() -> None:
     assert len(m.get_markup_squares()) == 5
     for i in m.get_markup_squares():
         assert m.is_markup_square(i)
+        assert m.is_markup_square(i, [puz.GridMarkup.Circled])
+        assert not m.is_markup_square(i, [puz.GridMarkup.Revealed])
         assert puz.GridMarkup.Circled == m.markup[i]
 
 
@@ -134,12 +136,22 @@ def test_markup_revealed() -> None:
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape_revealed.puz')
     m = p.markup()
     assert m
+    assert m.has_markup()
+    assert m.has_markup([puz.GridMarkup.Revealed])
+    assert m.has_markup([puz.GridMarkup.Circled])
+    assert m.has_markup([puz.GridMarkup.Revealed, puz.GridMarkup.Incorrect])  # should be an OR, not an AND
+    assert not m.has_markup([puz.GridMarkup.Incorrect])
+
     # all the cells in this puzzle have been marked Revealed so check that
-    for i in m.get_markup_squares():
+    for i in m.get_markup_squares([puz.GridMarkup.Revealed]):
+        assert m.is_markup_square(i, [puz.GridMarkup.Revealed])
         assert m.is_markup_square(i)
-        assert puz.GridMarkup.Revealed & m.markup[i]
+        assert not m.is_markup_square(i, [puz.GridMarkup.Incorrect])
+
     # also check that at least one of the Circled cells is marked
-    assert puz.GridMarkup.Circled & m.markup[7]
+    assert m.is_markup_square(7, [puz.GridMarkup.Circled])
+
+    assert not m.get_markup_squares([puz.GridMarkup.Incorrect])
 
 
 def test_no_markup() -> None:
@@ -315,9 +327,7 @@ def test_full_construction_roundtrip() -> None:
     r.table[22] = r.table[112] = r.table[202] = 2
 
     m = p.markup()
-    m.markup = [0] * (p.width * p.height)
-    for i in [7, 47, 56, 168, 177]:
-        m.markup[i] = puz.GridMarkup.Circled
+    m.set_markup_squares([7, 47, 56, 168, 177], puz.GridMarkup.Circled)
 
     assert orig == p.tobytes()
 

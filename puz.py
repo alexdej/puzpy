@@ -727,16 +727,23 @@ class Markup(PuzzleHelper):
         self.puzzle = puzzle
         # parse markup data
         markup_data = self.puzzle.extensions.get(Extensions.Markup, b'')
-        self.markup = parse_bytes(markup_data)
+        self.markup = parse_bytes(markup_data) or [0] * (self.puzzle.width * self.puzzle.height)
 
-    def has_markup(self) -> bool:
-        return any(bool(b) for b in self.markup)
+    def has_markup(self, markup_types: list[GridMarkup] | None = None) -> bool:
+        markup_mask = sum(markup_types) if markup_types else 0xff
+        return any(bool(b & markup_mask) for b in self.markup)
 
-    def get_markup_squares(self) -> list[int]:
-        return [i for i, b in enumerate(self.markup) if b]
+    def get_markup_squares(self, markup_types: list[GridMarkup] | None = None) -> list[int]:
+        markup_mask = sum(markup_types) if markup_types else 0xff
+        return [i for i, b in enumerate(self.markup) if b & markup_mask]
 
-    def is_markup_square(self, index: int) -> bool:
-        return bool(self.markup[index])
+    def is_markup_square(self, index: int, markup_types: list[GridMarkup] | None = None) -> bool:
+        markup_mask = sum(markup_types) if markup_types else 0xff
+        return bool(self.markup[index] & markup_mask)
+
+    def set_markup_squares(self, indices: list[int], markup_type: GridMarkup) -> None:
+        for i in indices:
+            self.markup[i] |= markup_type
 
     def save(self) -> None:
         if self.has_markup():
