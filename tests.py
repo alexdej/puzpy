@@ -315,7 +315,3 @@ def test_puzfile_roundtrip(filename):
             assert orig == new, '%s did not round-trip' % filename
 
 
-if __name__ == '__main__':
-    print(__file__)
-    result = pytest.main()
-    sys.exit(result)
