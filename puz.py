@@ -1,4 +1,6 @@
-﻿import functools
+﻿from __future__ import annotations  # for Python 3.9 and earlier
+
+import functools
 import importlib.metadata
 import operator
 import math
