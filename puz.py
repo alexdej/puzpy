@@ -732,8 +732,6 @@ class Markup:
 # helper functions for cksums and scrambling
 def data_cksum(data, cksum=0):
     for b in data:
-        if isinstance(b, bytes):
-            b = ord(b)
         # right-shift one with wrap-around
         lowbit = (cksum & 0x0001)
         cksum = (cksum >> 1)
@@ -852,8 +850,6 @@ def restore(s, t):
 
 
 def is_blacksquare(c):
-    if isinstance(c, int):
-        c = chr(c)
     return c in [BLACKSQUARE, BLACKSQUARE2]
 
 
