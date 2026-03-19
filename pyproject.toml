@@ -53,18 +53,9 @@ Repository = "https://github.com/alexdej/puzpy.git"
 Issues = "https://github.com/alexdej/puzpy/issues"
 
 [tool.mypy]
-files = ["puz.py"]
-exclude = ["tests.py"]
-strict = false
-warn_unused_ignores = true
-warn_return_any = true
-warn_redundant_casts = true
-disallow_untyped_defs = true
-disallow_any_generics = true
-
-[[tool.mypy.overrides]]
-module = ["tests"]
-allow_untyped_defs = true
+files = ["*.py"]
+strict = true
+no_incremental = true
 
 [build-system]
 requires = ["setuptools >= 77.0.3"]
