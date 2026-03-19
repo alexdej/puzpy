@@ -27,11 +27,11 @@ maintainers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-codeblocks", "pytest-cov", "flake8"]
+dev = ["pytest", "pytest-codeblocks", "pytest-cov", "pytest-flake8", "pytest-mypy"]
 publish = ["build", "twine"]
 
 [tool.pytest.ini_options]
-addopts = "--codeblocks"
+addopts = "--codeblocks --mypy --flake8"
 testpaths = ["README.md", "."]
 python_files = ["tests.py", "test_*.py"]
 filterwarnings = ["ignore::DeprecationWarning"]
@@ -45,9 +45,26 @@ show_missing = true
 [tool.setuptools]
 py-modules = ["puz"]
 
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
 [project.urls]
 Repository = "https://github.com/alexdej/puzpy.git"
 Issues = "https://github.com/alexdej/puzpy/issues"
+
+[tool.mypy]
+files = ["puz.py"]
+exclude = ["tests.py"]
+strict = false
+warn_unused_ignores = true
+warn_return_any = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+
+[[tool.mypy.overrides]]
+module = ["tests"]
+allow_untyped_defs = true
 
 [build-system]
 requires = ["setuptools >= 77.0.3"]
