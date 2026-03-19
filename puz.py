@@ -702,8 +702,9 @@ class Rebus:
             self.puzzle.extensions[Extensions.Rebus] = pack_bytes(self.table)
             rebus_solutions = self.puzzle.encode(dict_to_string(self.solutions))
             self.puzzle.extensions[Extensions.RebusSolutions] = rebus_solutions
-            rebus_fill = self.puzzle.encode(dict_to_string(self.fill))
-            self.puzzle.extensions[Extensions.RebusFill] = rebus_fill
+            if self.fill or Extensions.RebusFill in self.puzzle.extensions:
+                rebus_fill = self.puzzle.encode(dict_to_string(self.fill))
+                self.puzzle.extensions[Extensions.RebusFill] = rebus_fill
 
 
 class Markup:
@@ -876,6 +877,11 @@ def parse_dict(s):
 
 def dict_to_string(d):
     return ';'.join(':'.join(map(str, [k, v])) for k, v in d.items()) + ';'
+
+
+def rebus_dict_to_string(d):
+    # Across Lite format uses a leading space before rebus keys: ' 0:VAL;'
+    return ';'.join(f' {k}:{v}' for k, v in d.items()) + ';'
 
 
 def from_text_format(s):
