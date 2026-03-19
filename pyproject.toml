@@ -5,14 +5,13 @@ readme = { file = "README.md", content-type = "text/markdown" }
 license = "MIT"
 license-files = [ "LICENSE" ]
 version = "0.4.0"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = [ "puz", "crosswords", "crossword", "puzzle", "acrosslite", "xword", "xwords" ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

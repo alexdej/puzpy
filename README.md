@@ -80,7 +80,7 @@ flake8 .
 ## Python version support
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/puzpy)
 
-Python >=3.8 required. For python 2.7 use `puzpy==0.2.6`
+Python >=3.9 required since `0.3.1`. For older python versions including 2.x use `puzpy==0.2.6`
 
 ## Resources
 
