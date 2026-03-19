@@ -320,15 +320,18 @@ def test_nonrebus_helpers_roundtrip():
     assert orig == p.tobytes()
 
 
-@pytest.mark.parametrize('filename', glob.glob('testfiles/*.puz'))
+def _not_bad(files):
+    return [f for f in files if not f.endswith('_bad.puz')]
+
+@pytest.mark.parametrize('filename', _not_bad(glob.glob('testfiles/*.puz')))
 def test_puzfile_roundtrip(filename):
-    is_bad = filename.endswith('_bad.puz')
-    if is_bad:
-        with pytest.raises(puz.PuzzleFormatError):
-            puz.read(filename)
-    else:
-        with open(filename, 'rb') as fp:
-            orig = fp.read()
-            p = puz.read(filename)
-            new = p.tobytes()
-            assert orig == new, '%s did not round-trip' % filename
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+        p = puz.read(filename)
+        new = p.tobytes()
+        assert orig == new, '%s did not round-trip' % filename
+
+@pytest.mark.parametrize('filename', glob.glob('testfiles/*_bad.puz'))
+def test_bad_puzfile_raises_puzzle_format_error(filename):
+    with pytest.raises(puz.PuzzleFormatError):
+        puz.read(filename)
