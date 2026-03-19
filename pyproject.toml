@@ -27,7 +27,7 @@ maintainers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-codeblocks", "flake8", "coverage"]
+dev = ["pytest", "pytest-codeblocks", "pytest-cov", "flake8"]
 publish = ["build", "twine"]
 
 [tool.pytest.ini_options]
@@ -35,6 +35,12 @@ addopts = "--codeblocks"
 testpaths = ["README.md", "."]
 python_files = ["tests.py", "test_*.py"]
 filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["puz"]
+
+[tool.coverage.report]
+show_missing = true
 
 [tool.setuptools]
 py-modules = ["puz"]

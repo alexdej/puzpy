@@ -7,8 +7,7 @@ lint:
 	flake8 . --count --show-source --statistics
 
 coverage:
-	coverage run -m pytest
-	coverage html
+	pytest --cov --cov-report=html
 
 dist:
 	python -m build
