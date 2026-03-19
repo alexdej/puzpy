@@ -1,15 +1,16 @@
 # # puz.py: Python parser for .puz files
 # [![PyPI - Version](https://img.shields.io/pypi/v/puzpy)](https://pypi.org/project/puzpy/)
-# ![PyPI - Downloads](https://img.shields.io/pypi/dm/puzpy)
-# ![PyPI - License](https://img.shields.io/pypi/l/puzpy)
-# ![GitHub branch check runs](https://img.shields.io/github/check-runs/alexdej/puzpy/master)
+# [![PyPI - Downloads](https://img.shields.io/pypi/dm/puzpy)](https://pypi.org/project/puzpy/)
+# [![PyPI - License](https://img.shields.io/pypi/l/puzpy)](https://opensource.org/licenses/MIT)
+# [![GitHub branch check runs](https://img.shields.io/github/check-runs/alexdej/puzpy/master)](https://github.com/alexdej/puzpy/actions/workflows/build.yml)
+# [![Coverage](https://img.shields.io/badge/dynamic/json?url=https://alexdej.github.io/puzpy/coverage/coverage.json&query=$.totals.percent_covered_display&suffix=%25&label=coverage)](https://alexdej.github.io/puzpy/coverage/)
 # 
 # 
 # Python library to read and write crossword puzzle files in Across Lite `.puz` and/or `.txt` formats.
 # 
 # ## Example Usage
 # 
-def test_line_11():
+def test_line_12():
     import puz
     
     # Load a puzzle file:
@@ -68,8 +69,13 @@ def test_line_11():
 # ## Running tests
 # [![Build and run tests](https://github.com/alexdej/puzpy/actions/workflows/build.yml/badge.svg)](https://github.com/alexdej/puzpy/actions/workflows/build.yml)
 # 
-# To run all tests:
-# ```pytest```
+
+# # Run all tests
+# pytest
+# 
+# # Run lint
+# flake8 .
+
 # 
 # ## Python version support
 # ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/puzpy)
@@ -78,10 +84,10 @@ def test_line_11():
 # 
 # ## Resources
 # 
-# - [`.puz` file format](http://code.google.com/p/puz/wiki/FileFormat)
-# - [`.txt` file format](https://www.litsoft.com/across/docs/AcrossTextFormat.pdf)
+# - [AcrossLite .puz file format](http://code.google.com/p/puz/wiki/FileFormat)
+# - [Across text format](https://www.litsoft.com/across/docs/AcrossTextFormat.pdf)
 # - [Archive of NYT daily puzzles 1993 - August 2021](https://archive.org/details/nyt-puz)
-# - [`.puz` to `.pdf` file converter](https://www.crosswordnexus.com/apps/puz-to-pdf/)
+# - [puz to pdf file converter](https://www.crosswordnexus.com/apps/puz-to-pdf/)
 # 
 # ## License
 # 
