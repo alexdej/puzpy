@@ -86,6 +86,7 @@ def test_markup():
         assert m.is_markup_square(i)
         assert puz.GridMarkup.Circled == m.markup[i]
 
+
 def test_markup_revealed():
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape_revealed.puz')
     m = p.markup()
@@ -96,6 +97,7 @@ def test_markup_revealed():
         assert puz.GridMarkup.Revealed & m.markup[i]
     # also check that at least one of the Circled cells is marked
     assert puz.GridMarkup.Circled & m.markup[7]
+
 
 def test_no_markup():
     p = puz.read('testfiles/washpost.puz')
