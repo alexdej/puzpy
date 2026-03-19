@@ -69,7 +69,7 @@ it can round-trip 100% of them with full fidelity.
 ## Running tests
 [![Build and run tests](https://github.com/alexdej/puzpy/actions/workflows/build.yml/badge.svg)](https://github.com/alexdej/puzpy/actions/workflows/build.yml)
 
-```
+```bash skip
 # Run all tests
 pytest
 

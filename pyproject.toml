@@ -28,8 +28,14 @@ maintainers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-readme", "flake8", "coverage"]
+dev = ["pytest", "pytest-codeblocks", "flake8", "coverage"]
 publish = ["build", "twine"]
+
+[tool.pytest.ini_options]
+addopts = "--codeblocks"
+testpaths = ["README.md", "."]
+python_files = ["tests.py", "test_*.py"]
+filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.setuptools]
 py-modules = ["puz"]

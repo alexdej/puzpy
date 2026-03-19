@@ -315,12 +315,6 @@ def test_puzfile_roundtrip(filename):
             assert orig == new, '%s did not round-trip' % filename
 
 
-def test_update_readme_test():
-    # update the test_readme.py file if README.md has changed
-    from pytest_readme import setup
-    setup()
-
-
 if __name__ == '__main__':
     print(__file__)
     result = pytest.main()
