@@ -1,4 +1,3 @@
-<!--pytest-codeblocks:skipfile-->
 # PUZ File Format
 
 Detailed file format documentation.

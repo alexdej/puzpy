@@ -32,8 +32,7 @@ publish = ["build", "twine"]
 
 [tool.pytest.ini_options]
 addopts = "--codeblocks --mypy --flake8"
-testpaths = ["README.md", "."]
-python_files = ["tests.py", "test_*.py"]
+testpaths = ["README.md", "*.py"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
