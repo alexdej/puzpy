@@ -61,3 +61,6 @@ target/
 *.swp
 .vscode
 .claude
+
+# Across Lite
+score.dat
