@@ -925,17 +925,54 @@ def from_text_format(s: str) -> Puzzle:
         w, h = d['SIZE'].split('x')
         p.width = int(w)
         p.height = int(h)
+    # parse REBUS section before GRID — markers in the grid reference it
+    # format: marker:EXTENDED_SOLUTION:SHORT_CHAR (one per line)
+    # optional flag line: MARK; (circles all lowercase-letter cells in the grid)
+    rebus_map: dict[str, tuple[str, str]] = {}  # marker char -> (extended_solution, short_char)
+    mark_flag = False
+    if 'REBUS' in d:
+        for line in d['REBUS'].splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if ':' not in line:
+                # flag line, e.g. "MARK;"
+                if 'MARK' in [f.strip().upper() for f in line.split(';') if f.strip()]:
+                    mark_flag = True
+            else:
+                parts = line.split(':')
+                marker = parts[0]
+                extended = parts[1] if len(parts) > 1 else ''
+                short = parts[2] if len(parts) > 2 else (extended[0] if extended else marker)
+                if marker:
+                    rebus_map[marker] = (extended, short)
+
+    rebus_cells: dict[int, str] = {}  # cell index -> extended solution
+    mark_cells: list[int] = []       # cell indices to be circled (MARK flag)
     if 'GRID' in d:
         solution_lines = d['GRID'].splitlines()
-        p.solution = ''.join(line.strip() for line in solution_lines if line.strip())
+        raw = ''.join(line.strip() for line in solution_lines if line.strip())
+        if rebus_map or mark_flag:
+            solution_chars: list[str] = []
+            for i, c in enumerate(raw):
+                if c in rebus_map:
+                    extended, short = rebus_map[c]
+                    solution_chars.append(short)
+                    rebus_cells[i] = extended
+                elif mark_flag and c.islower() and not is_blacksquare(c):
+                    solution_chars.append(c.upper())
+                    mark_cells.append(i)
+                else:
+                    solution_chars.append(c)
+            p.solution = ''.join(solution_chars)
+        else:
+            p.solution = raw
     if 'ACROSS' in d:
         across_clues.extend(line.strip() for line in d['ACROSS'].splitlines() if line.strip())
     if 'DOWN' in d:
         down_clues.extend(line.strip() for line in d['DOWN'].splitlines() if line.strip())
     if 'NOTEPAD' in d:
         p.notes = d['NOTEPAD']
-    if 'REBUS' in d:
-        pass  # TODO: text file REBUS
 
     if p.solution:
         p.fill = ''.join(c if c == BLACKSQUARE else BLANKSQUARE for c in p.solution)
@@ -951,6 +988,17 @@ def from_text_format(s: str) -> Puzzle:
             clue = down_clues[i] if i < len(down_clues) else ''
             down[i]['clue'] = clue
             p.clues[down[i]['clue_index']] = clue
+
+        if rebus_cells:
+            r = p.rebus()
+            for i, extended in rebus_cells.items():
+                k = next((k for k, v in r.solutions.items() if v == extended), None)
+                if k is None:
+                    k = len(r.solutions)
+                    r.solutions[k] = extended
+                r.table[i] = k + 1
+        if mark_cells:
+            p.markup().set_markup_squares(mark_cells, GridMarkup.Circled)
 
     return p
 
@@ -977,6 +1025,14 @@ def text_file_as_dict(s: str) -> dict[str, str]:
 def to_text_format(p: Puzzle, text_version: str = 'v1') -> str:
     TAB = '\t'  # most lines begin indented with whitespace
     lines = []
+
+    rebus = p.rebus() if p.has_rebus() else None
+    has_rebus = rebus is not None and rebus.has_rebus()
+
+    # rebus requires v2 format; auto-upgrade if needed
+    if has_rebus and text_version == 'v1':
+        text_version = 'v2'
+
     if text_version == 'v1':
         lines.append('<ACROSS PUZZLE>')
     elif text_version:
@@ -992,10 +1048,40 @@ def to_text_format(p: Puzzle, text_version: str = 'v1') -> str:
     lines.append(TAB + p.copyright)
     lines.append('<SIZE>')
     lines.append(TAB + f'{p.width}x{p.height}')
+
+    # assign a single-char marker to each unique rebus solution
+    # digits 1-9 then lowercase a-z, matching the v2 spec convention
+    solution_to_marker: dict[str, str] = {}
+    if has_rebus:
+        assert rebus is not None
+        _marker_chars = [str(i) for i in range(1, 10)] + list('abcdefghijklmnopqrstuvwxyz')
+        for idx, solution in enumerate(rebus.solutions.values()):
+            if idx < len(_marker_chars):
+                solution_to_marker[solution] = _marker_chars[idx]
+
     lines.append('<GRID>')
-    for r in range(p.height):
-        row = p.solution[r*p.width:(r+1)*p.width]
+    for row_idx in range(p.height):
+        row = ''
+        for col_idx in range(p.width):
+            i = row_idx * p.width + col_idx
+            if rebus and rebus.is_rebus_square(i):
+                sol = rebus.get_rebus_solution(i)
+                row += solution_to_marker.get(sol or '', p.solution[i])
+            else:
+                row += p.solution[i]
         lines.append(TAB + row)
+
+    if has_rebus:
+        assert rebus is not None
+        lines.append('<REBUS>')
+        for solution, marker in solution_to_marker.items():
+            # short_char is whatever single letter is stored in p.solution at a rebus square
+            short_char = solution[0]  # fallback
+            for i in range(p.width * p.height):
+                if rebus.is_rebus_square(i) and rebus.get_rebus_solution(i) == solution:
+                    short_char = p.solution[i]
+                    break
+            lines.append(TAB + f'{marker}:{solution}:{short_char}')
 
     # get clues in across/down order
     numbering = p.clue_numbering()
