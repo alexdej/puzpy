@@ -147,9 +147,9 @@ class PuzzleFormatError(Exception):
 class Puzzle:
     """Represents a puzzle
     """
-
     def __repr__(self) -> str:
         return f'Puzzle({self.width}x{self.height}, title={self.title!r}, author={self.author!r})'
+
     def __init__(self, version: str | bytes = '1.3') -> None:
         """Initializes a blank puzzle
         """
