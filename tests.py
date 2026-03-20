@@ -293,6 +293,18 @@ def test_save_small_puzzle() -> None:
         os.unlink(filename)
 
 
+def test_rebus_fill_parsing() -> None:
+    # nyt_rebus_with_notes_and_shape_solved.puz has RebusFill data with all three
+    # rebus squares filled with 'STAR'
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape_solved.puz')
+    r = p.rebus()
+    assert r.has_rebus()
+    for i in r.get_rebus_squares():
+        assert r.get_rebus_fill(i) == 'STAR'
+    # non-rebus squares have no fill
+    assert r.get_rebus_fill(0) is None
+
+
 def test_rebus_player_flow() -> None:
     # simulate a player opening a rebus puzzle, entering fill, and saving
     p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
@@ -496,6 +508,150 @@ def test_to_text_format_invalid_version() -> None:
     p = puz.read('testfiles/washpost.puz')
     with pytest.raises(ValueError):
         puz.to_text_format(p, text_version=None)  # type: ignore
+
+
+def _make_puzzle() -> puz.Puzzle:
+    p = puz.Puzzle()
+    p.width = 3
+    p.height = 3
+    p.solution = 'ABCDEFGHI'
+    p.fill = '---------'
+    p.clues = ['clue'] * 6
+    return p
+
+
+def test_rebus_add_squares() -> None:
+    p = _make_puzzle()
+    r = p.rebus()
+
+    # add a single square using int form
+    r.add_rebus_squares(4, 'STAR')
+    assert r.is_rebus_square(4)
+    assert r.get_rebus_solution(4) == 'STAR'
+    assert not r.is_rebus_square(0)
+
+    # add multiple squares using list form
+    r.add_rebus_squares([0, 8], 'MOON')
+    assert r.is_rebus_square(0)
+    assert r.get_rebus_solution(0) == 'MOON'
+    assert r.is_rebus_square(8)
+
+    # adding the same solution again reuses the existing key (solutions dict doesn't grow)
+    n = len(r.solutions)
+    r.add_rebus_squares(2, 'STAR')
+    assert len(r.solutions) == n
+    assert r.get_rebus_solution(2) == 'STAR'
+
+
+def test_rebus_set_solution() -> None:
+    p = _make_puzzle()
+    r = p.rebus()
+    r.add_rebus_squares(4, 'STAR')
+
+    r.set_rebus_solution(4, 'MOON')
+    assert r.get_rebus_solution(4) == 'MOON'
+
+    # set_rebus_solution on a non-rebus square is a no-op
+    r.set_rebus_solution(0, 'MOON')
+    assert not r.is_rebus_square(0)
+
+
+def test_check_rebus_fill_non_rebus_square() -> None:
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+    r = p.rebus()
+    # index 0 is not a rebus square
+    assert not r.is_rebus_square(0)
+    assert not r.check_rebus_fill(0)
+
+
+def test_rebus_remove() -> None:
+    p = _make_puzzle()
+    r = p.rebus()
+    r.add_rebus_squares([0, 4, 8], 'STAR')
+
+    # remove a single square using int form
+    r.remove_rebus_squares(0)
+    assert not r.is_rebus_square(0)
+    assert r.is_rebus_square(4)
+
+    # remove multiple squares using list form
+    r.remove_rebus_squares([4, 8])
+    assert not r.is_rebus_square(4)
+    assert not r.is_rebus_square(8)
+
+    # set up for remove_rebus_solution tests
+    r.add_rebus_squares([0, 4], 'STAR')
+    r.add_rebus_squares([8], 'MOON')
+
+    # remove by string: clears squares that used that solution
+    r.remove_rebus_solution('STAR')
+    assert not r.is_rebus_square(0)
+    assert not r.is_rebus_square(4)
+    assert r.is_rebus_square(8)  # MOON square unaffected
+
+    # remove by int key
+    moon_key = next(k for k, v in r.solutions.items() if v == 'MOON')
+    r.remove_rebus_solution(moon_key)
+    assert not r.is_rebus_square(8)
+
+    # remove a non-existent solution string is a no-op (no crash)
+    r.remove_rebus_solution('NONEXISTENT')
+
+
+def test_rebus_save_dirty() -> None:
+    p = _make_puzzle()
+    r = p.rebus()
+
+    # add squares but don't save, then remove them — _dirty=True, no extension ever written
+    r.add_rebus_squares([0, 4], 'STAR')
+    r.remove_rebus_squares([0, 4])
+    assert not r.has_rebus()
+
+    # save should take the _dirty branch and ensure no stale extensions are left
+    r.save()
+    assert puz.Extensions.Rebus not in p.extensions
+    assert puz.Extensions.RebusSolutions not in p.extensions
+    assert puz.Extensions.RebusFill not in p.extensions
+
+
+def test_markup_clear_squares() -> None:
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+    m = p.markup()
+    squares = m.get_markup_squares()
+    assert squares
+
+    # clear a single square using int form
+    m.clear_markup_squares(squares[0])
+    assert not m.is_markup_square(squares[0])
+
+    # clear multiple squares using list form
+    m.clear_markup_squares(squares[1:])
+    assert not any(m.is_markup_square(i) for i in squares[1:])
+    assert not m.has_markup()
+
+
+def test_markup_set_single_index() -> None:
+    p = _make_puzzle()
+    m = p.markup()
+
+    # set_markup_squares with a single int (not a list)
+    m.set_markup_squares(4, puz.GridMarkup.Circled)
+    assert m.is_markup_square(4)
+    assert m.is_markup_square(4, puz.GridMarkup.Circled)
+
+
+def test_markup_save_dirty() -> None:
+    p = _make_puzzle()
+    m = p.markup()
+    m.set_markup_squares([4], puz.GridMarkup.Circled)
+    m.save()
+    assert puz.Extensions.Markup in p.extensions
+
+    # clear all markup and save — dirty flag should cause the extension to be removed
+    m.clear_markup_squares([4])
+    assert not m.has_markup()
+    m.save()
+    assert puz.Extensions.Markup not in p.extensions
 
 
 def test_rebus_fill_returns_none_for_non_rebus_square() -> None:
