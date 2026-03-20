@@ -147,6 +147,9 @@ class PuzzleFormatError(Exception):
 class Puzzle:
     """Represents a puzzle
     """
+
+    def __repr__(self) -> str:
+        return f'Puzzle({self.width}x{self.height}, title={self.title!r}, author={self.author!r})'
     def __init__(self, version: str | bytes = '1.3') -> None:
         """Initializes a blank puzzle
         """
@@ -464,6 +467,9 @@ class PuzzleBuffer:
     wraps a bytes object and provides .puz-specific methods for
     reading and writing data
     """
+    def __repr__(self) -> str:
+        return f'PuzzleBuffer(pos={self.pos}, length={len(self.data)}, encoding={self.encoding!r})'
+
     def __init__(self, data: bytes | None = None, encoding: str = ENCODING):
         self.data = bytearray(data) if data else bytearray()
         self.encoding = encoding
@@ -600,6 +606,9 @@ class PuzzleHelper(Protocol):
 
 
 class DefaultClueNumbering(PuzzleHelper):
+    def __repr__(self) -> str:
+        return f'DefaultClueNumbering(across={len(self.across)}, down={len(self.down)})'
+
     def __init__(self, grid: str, clues: list[str], width: int, height: int) -> None:
         self.grid = grid
         self.clues = clues
@@ -639,6 +648,9 @@ class DefaultClueNumbering(PuzzleHelper):
 
 
 class Grid:
+    def __repr__(self) -> str:
+        return f'Grid({self.width}x{self.height})'
+
     def __init__(self, grid: str, width: int, height: int) -> None:
         self.grid = grid
         self.width = width
@@ -688,6 +700,9 @@ class Grid:
 
 
 class Rebus(PuzzleHelper):
+    def __repr__(self) -> str:
+        return f'Rebus(squares={len(self.get_rebus_squares())}, solutions={len(self.solutions)})'
+
     def __init__(self, puzzle: Puzzle) -> None:
         self.puzzle = puzzle
 
@@ -836,6 +851,9 @@ class Rebus(PuzzleHelper):
 
 
 class Markup(PuzzleHelper):
+    def __repr__(self) -> str:
+        return f'Markup(marked_squares={len(self.get_markup_squares())})'
+
     def __init__(self, puzzle: Puzzle) -> None:
         self.puzzle = puzzle
         self._dirty = False  # track whether there are unsaved changes to the markup helper that need to be committed
@@ -882,6 +900,9 @@ class TimerStatus(IntEnum):
 
 
 class Timer(PuzzleHelper):
+    def __repr__(self) -> str:
+        return f'Timer(elapsed_seconds={self.elapsed_seconds}, status={self.status.name})'
+
     def __init__(self, puzzle: Puzzle) -> None:
         self.puzzle = puzzle
         timer_data = self.puzzle.extensions.get(Extensions.Timer, b'0,1')

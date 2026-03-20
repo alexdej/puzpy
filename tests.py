@@ -188,6 +188,18 @@ def test_no_rebus() -> None:
     assert p.check_rebus_answers()  # should return True since no rebus squares to check
 
 
+def test_repr() -> None:
+    p = puz.read('testfiles/nyt_rebus_with_notes_and_shape.puz')
+    assert repr(p).startswith('Puzzle(')
+    assert repr(p.rebus()).startswith('Rebus(')
+    assert repr(p.markup()).startswith('Markup(')
+    assert repr(p.clue_numbering()).startswith('DefaultClueNumbering(')
+    assert repr(puz.Grid(p.solution, p.width, p.height)).startswith('Grid(')
+    assert repr(puz.PuzzleBuffer(b'test')).startswith('PuzzleBuffer(')
+    p2 = puz.read('testfiles/nyt_partlyfilled.puz')
+    assert repr(p2.timer()).startswith('Timer(')
+
+
 def test_puzzle_type() -> None:
     assert puz.read('testfiles/washpost.puz').puzzletype == puz.PuzzleType.Normal
     assert puz.read('testfiles/nyt_locked.puz').puzzletype == puz.PuzzleType.Normal
