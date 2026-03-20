@@ -30,7 +30,7 @@ ENCODING_ERRORS = 'strict'  # raises an exception for bad chars; change to 'repl
 ACROSSDOWN = b'ACROSS&DOWN'
 
 BLACKSQUARE = '.'
-BLACKSQUARE2 = ':'
+BLACKSQUARE2 = ':'  # used for diagramless puzzles
 BLANKSQUARE = '-'
 
 
@@ -1067,7 +1067,9 @@ def from_text_format(s: str) -> Puzzle:
         p.notes = d['NOTEPAD']
 
     if p.solution:
-        p.fill = ''.join(c if c == BLACKSQUARE else BLANKSQUARE for c in p.solution)
+        if BLACKSQUARE2 in p.solution:
+            p.puzzletype = PuzzleType.Diagramless
+        p.fill = ''.join(c if is_blacksquare(c) else BLANKSQUARE for c in p.solution)
         across, down = get_grid_numbering(p.fill, p.width, p.height)
         # we have to match puzfile's expected clue ordering or we won't be able to
         # write the puzzle out as a valid .puz file

@@ -457,6 +457,35 @@ def test_text_format() -> None:
     assert numbering.down[-1]['clue'] == 'Tax break savings account'
 
 
+def test_text_format_diagramless() -> None:
+    # Grid:  AB:CD / EFGHI / :JKLM / NOPQR / STUVW
+    # ':' is the diagramless black square character
+    text = '\n'.join([
+        '<ACROSS PUZZLE>',
+        '<TITLE>', '\tDiagramless Test',
+        '<AUTHOR>', '\tTest Author',
+        '<COPYRIGHT>', '',
+        '<SIZE>', '\t5x5',
+        '<GRID>',
+        '\tAB:CD',
+        '\tEFGHI',
+        '\t:JKLM',
+        '\tNOPQR',
+        '\tSTUVW',
+        '<ACROSS>',
+        '\tclue 1', '\tclue 2', '\tclue 3', '\tclue 4', '\tclue 5', '\tclue 6',
+        '<DOWN>',
+        '\tclue 7', '\tclue 8', '\tclue 9', '\tclue 10', '\tclue 11', '\tclue 12',
+    ])
+    p = puz.from_text_format(text)
+    assert p.puzzletype == puz.PuzzleType.Diagramless
+    assert p.solution == 'AB:CDEFGHI:JKLMNOPQRSTUVW'
+    # fill must use ':' (not '-') for black squares so clue_numbering works
+    assert p.fill == '--:-------:--------------'
+    numbering = p.clue_numbering()
+    assert len(numbering.across) + len(numbering.down) == len(p.clues)
+
+
 def test_text_format_rebus() -> None:
     p = puz.read_text('testfiles/text_format_v2_rebus.txt')
     assert p.width == 5
@@ -717,7 +746,7 @@ def test_rebus_fill_returns_none_for_non_rebus_square() -> None:
 
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*.txt'))
 def test_textfile_roundtrip(filename: str) -> None:
-    with open(filename, 'r') as fp:
+    with open(filename, 'r', encoding='utf-8') as fp:
         orig = fp.read()
         p = puz.read_text(filename)
         new = puz.to_text_format(p)
