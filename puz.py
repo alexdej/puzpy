@@ -385,13 +385,24 @@ class Puzzle:
                                           ignore_chars=self.blacksquare())
             self.solution = scrambled
 
-    def check_answers(self, fill: str) -> bool:
+    def check_answers(self, fill: str, strict: bool = True) -> bool:
         if self.is_solution_locked():
+            if not strict:
+                raise ValueError('non-strict checking not possible when solution is locked')
             scrambled = scrambled_cksum(fill, self.width, self.height,
                                         ignore_chars=self.blacksquare(), encoding=self.encoding)
             return scrambled == self.scrambled_cksum
-        else:
-            return fill == self.solution
+        elif fill == self.solution:
+            return True
+        elif not strict:
+            return all(a == b for a, b in zip(fill, self.solution) if b != self.blacksquare() and a != BLANKSQUARE)
+        return False
+
+    def check_rebus_answers(self, strict: bool = True) -> bool:
+        if self.has_rebus():
+            return self.rebus().check_rebus_fill(strict=strict)
+        # if no rebus just return True since there's nothing to check
+        return True
 
     def header_cksum(self, cksum: int = 0) -> int:
         return data_cksum(struct.pack(HEADER_CKSUM_FORMAT,
@@ -749,12 +760,19 @@ class Rebus(PuzzleHelper):
             self.solutions[k] = solution
         return k
 
-    def check_rebus_fill(self, index: int) -> bool:
-        if self.is_rebus_square(index):
+    def check_rebus_fill(self, indexes: int | list[int] | None = None, strict: bool = True) -> bool:
+        if isinstance(indexes, int):
+            indexes = [indexes]
+        if indexes is None:
+            indexes = self.get_rebus_squares()
+        for index in indexes:
+            if not self.is_rebus_square(index):
+                raise ValueError(f'index {index} is not a rebus square')
             solution = self.get_rebus_solution(index)
             fill = self.get_rebus_fill(index)
-            return solution == fill
-        return False
+            if solution != fill and (fill or strict):
+                return False
+        return True
 
     def get_rebus_solution(self, index: int) -> str | None:
         if self.is_rebus_square(index):

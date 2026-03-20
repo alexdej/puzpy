@@ -119,10 +119,23 @@ def test_rebus() -> None:
     i = r.get_rebus_squares()[0]
     r.set_rebus_fill(i, 'STAR')
     assert r.check_rebus_fill(i)
+    assert not r.check_rebus_fill(r.get_rebus_squares())
+    assert not r.check_rebus_fill()
+    assert r.check_rebus_fill(strict=False)
+
+    assert not p.check_rebus_answers()  # strict=True
+    assert p.check_rebus_answers(strict=False)
+
+    for i in r.get_rebus_squares():
+        r.set_rebus_fill(i, 'STAR')
+    assert r.check_rebus_fill()
+    assert p.check_rebus_answers()
 
     i = r.get_rebus_squares()[-1]
     r.set_rebus_fill(i, 'HEART')
     assert not r.check_rebus_fill(i)
+    assert not r.check_rebus_fill()
+    assert not p.check_rebus_answers()  # strict=True
 
     assert r.get_rebus_solution(100) is None
 
@@ -167,6 +180,12 @@ def test_no_markup() -> None:
     p = puz.read('testfiles/washpost.puz')
     assert not p.has_markup()
     assert not p.markup().has_markup()
+
+
+def test_no_rebus() -> None:
+    p = puz.read('testfiles/washpost.puz')
+    assert not p.has_rebus()
+    assert p.check_rebus_answers()  # should return True since no rebus squares to check
 
 
 def test_puzzle_type() -> None:
@@ -419,6 +438,25 @@ def test_check_answers_locked() -> None:
     assert p2.check_answers(p1.solution)
 
 
+def test_check_answers_strict() -> None:
+    p = _make_puzzle()  # solution = 'ABCDEFGHI', fill = '---------'
+    partial_fill = 'ABC------'   # first row correct, rest blank
+    wrong_fill = 'ABCDEFGHX'  # one cell wrong
+
+    # strict=True (default): unfilled cells count as wrong
+    assert not p.check_answers(partial_fill)
+    assert not p.check_answers(wrong_fill)
+
+    # strict=False: unfilled cells are skipped, only wrong filled cells fail
+    assert p.check_answers(partial_fill, strict=False)
+    assert not p.check_answers(wrong_fill, strict=False)
+
+    # strict=False raises on a locked puzzle
+    p_locked = puz.read('testfiles/nyt_locked.puz')
+    with pytest.raises(ValueError):
+        p_locked.check_answers(p_locked.fill, strict=False)
+
+
 def test_unlock_relock_diagramless() -> None:
     with open('testfiles/nyt_diagramless.puz', 'rb') as fp:
         orig = fp.read()
@@ -669,7 +707,8 @@ def test_check_rebus_fill_non_rebus_square() -> None:
     r = p.rebus()
     # index 0 is not a rebus square
     assert not r.is_rebus_square(0)
-    assert not r.check_rebus_fill(0)
+    with pytest.raises(ValueError):
+        r.check_rebus_fill(0)
 
 
 def test_rebus_remove() -> None:
@@ -804,8 +843,8 @@ def test_nonrebus_helpers_roundtrip() -> None:
     with open(filename, 'rb') as fp:
         orig = fp.read()
     p = puz.read(filename)
-    p.has_rebus()   # side effect: instantiates Rebus helper
-    p.has_markup()  # side effect: instantiates Markup helper
+    p.rebus()   # side effect: instantiates Rebus helper
+    p.markup()  # side effect: instantiates Markup helper
     assert orig == p.tobytes()
 
 
