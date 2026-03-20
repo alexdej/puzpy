@@ -59,3 +59,5 @@ target/
 
 # editor files
 *.swp
+.vscode
+.claude
