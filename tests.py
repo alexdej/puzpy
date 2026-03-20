@@ -477,6 +477,21 @@ def test_text_format_rebus_mark_flag() -> None:
     assert m.is_markup_square(2, [puz.GridMarkup.Circled])
 
 
+def test_text_format_mark_write() -> None:
+    p = puz.read_text('testfiles/text_format_v2_mark.txt')
+    # verify circles were read correctly
+    m = p.markup()
+    assert m.is_markup_square(0, [puz.GridMarkup.Circled])
+    assert not m.is_markup_square(1, [puz.GridMarkup.Circled])
+    assert m.is_markup_square(2, [puz.GridMarkup.Circled])
+    # verify writing produces lowercase in grid and MARK; in REBUS section
+    text = puz.to_text_format(p)
+    assert '<ACROSS PUZZLE v2>' in text
+    assert '\tMARK;' in text
+    grid_line = [line for line in text.splitlines() if line.strip().startswith('a')][0]
+    assert grid_line == '\taBc'  # circled cells written as lowercase
+
+
 def test_convert_text_to_puz() -> None:
     p = puz.read_text('testfiles/text_format_v1.txt')
     bytes = p.tobytes()

@@ -1,0 +1,24 @@
+<ACROSS PUZZLE v2>
+<TITLE>
+	Mark Flag Test
+<AUTHOR>
+	Test
+<COPYRIGHT>
+	
+<SIZE>
+	3x3
+<GRID>
+	aBc
+	DEF
+	GHI
+<REBUS>
+	MARK;
+<ACROSS>
+	clue
+	clue
+	clue
+<DOWN>
+	clue
+	clue
+	clue
+<NOTEPAD>
