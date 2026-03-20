@@ -501,6 +501,29 @@ def test_text_format_rebus() -> None:
     assert not r.is_rebus_square(1)
 
 
+def test_text_format_rebus_shared_solution() -> None:
+    # two cells with the same rebus solution should share one key in solutions
+    text = '\n'.join([
+        '<ACROSS PUZZLE v2>',
+        '<TITLE>', '\t',
+        '<AUTHOR>', '\t',
+        '<COPYRIGHT>', '\t',
+        '<SIZE>', '\t3x3',
+        '<GRID>', '\t1B1', '\tDEF', '\tGHI',
+        '<REBUS>', '\t1:STAR:S',
+        '<ACROSS>', '\tclue', '\tclue', '\tclue',
+        '<DOWN>', '\tclue', '\tclue', '\tclue',
+        '<NOTEPAD>', '',
+    ])
+    p = puz.from_text_format(text)
+    r = p.rebus()
+    assert r.is_rebus_square(0)
+    assert r.is_rebus_square(2)
+    assert r.get_rebus_solution(0) == 'STAR'
+    assert r.get_rebus_solution(2) == 'STAR'
+    assert len(r.solutions) == 1  # shared, not duplicated
+
+
 def test_text_format_rebus_mark_flag() -> None:
     # MARK flag: lowercase letters in grid are treated as circled cells
     # also tests blank lines in the REBUS section (which should be skipped)
@@ -681,6 +704,19 @@ def test_rebus_remove() -> None:
 
     # remove a non-existent solution string is a no-op (no crash)
     r.remove_rebus_solution('NONEXISTENT')
+
+
+def test_rebus_add_solution_after_remove() -> None:
+    # adding a solution after a removal should not collide with existing keys
+    p = _make_puzzle()
+    r = p.rebus()
+    r.add_rebus_squares(0, 'STAR')   # k=0
+    r.add_rebus_squares(4, 'MOON')   # k=1
+    r.remove_rebus_solution('STAR')  # solutions={1: 'MOON'}
+    r.add_rebus_squares(8, 'HEART')  # must get k=2, not k=1 (which would collide with MOON)
+    assert r.get_rebus_solution(4) == 'MOON'
+    assert r.get_rebus_solution(8) == 'HEART'
+    assert len(r.solutions) == 2
 
 
 def test_rebus_save_dirty() -> None:

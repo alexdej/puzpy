@@ -319,7 +319,9 @@ class Puzzle:
         self.fileversion = self.version + b'\0'
 
     def has_rebus(self) -> bool:
-        return self.rebus().has_rebus()
+        if Extensions.Rebus in self.extensions or 'rebus' in self.helpers:
+            return self.rebus().has_rebus()
+        return False
 
     def rebus(self) -> 'Rebus':
         if 'rebus' not in self.helpers:
@@ -339,7 +341,9 @@ class Puzzle:
         return cast('Timer', self.helpers['timer'])
 
     def has_markup(self) -> bool:
-        return self.markup().has_markup()
+        if Extensions.Markup in self.extensions or 'markup' in self.helpers:
+            return self.markup().has_markup()
+        return False
 
     def markup(self) -> 'Markup':
         if 'markup' not in self.helpers:
@@ -741,7 +745,7 @@ class Rebus(PuzzleHelper):
     def add_rebus_solution(self, solution: str) -> int:
         k = next((i for i, s in self.solutions.items() if s == solution), -1)
         if k < 0:
-            k = len(self.solutions)  # add to end of solutions
+            k = (max(self.solutions) + 1) if self.solutions else 0
             self.solutions[k] = solution
         return k
 
@@ -1120,13 +1124,8 @@ def from_text_format(s: str) -> Puzzle:
             p.clues[down[i]['clue_index']] = clue
 
         if rebus_cells:
-            r = p.rebus()
             for i, extended in rebus_cells.items():
-                k = next((k for k, v in r.solutions.items() if v == extended), None)
-                if k is None:
-                    k = len(r.solutions)
-                    r.solutions[k] = extended
-                r.table[i] = k + 1
+                p.rebus().add_rebus_squares(i, extended)
         if mark_cells:
             p.markup().set_markup_squares(mark_cells, GridMarkup.Circled)
 
@@ -1156,13 +1155,11 @@ def to_text_format(p: Puzzle, text_version: str = 'v1') -> str:
     TAB = '\t'  # most lines begin indented with whitespace
     lines = []
 
-    rebus = p.rebus() if p.has_rebus() else None
-    has_rebus = rebus is not None and rebus.has_rebus()
+    has_rebus = p.has_rebus()
+    # text only supports circled cells using the MARK flag
+    has_mark = p.has_markup() and p.markup().has_markup([GridMarkup.Circled])
 
-    markup = p.markup() if p.has_markup() else None
-    has_mark = markup is not None and markup.has_markup([GridMarkup.Circled])
-
-    # rebus and MARK flag require v2 format; auto-upgrade if needed
+    # REBUS section and MARK flag require v2 format; auto-upgrade if needed
     if (has_rebus or has_mark) and text_version == 'v1':
         text_version = 'v2'
 
@@ -1185,22 +1182,30 @@ def to_text_format(p: Puzzle, text_version: str = 'v1') -> str:
     # assign a single-char marker to each unique rebus solution
     # digits 1-9 then lowercase a-z, matching the v2 spec convention
     solution_to_marker: dict[str, str] = {}
+    rebus_squares: set[int] = set()
+    solution_to_short_char: dict[str, str] = {}
     if has_rebus:
-        assert rebus is not None
         _marker_chars = [str(i) for i in range(1, 10)] + list('abcdefghijklmnopqrstuvwxyz')
-        for idx, solution in enumerate(rebus.solutions.values()):
+        for idx, solution in enumerate(p.rebus().solutions.values()):
             if idx < len(_marker_chars):
                 solution_to_marker[solution] = _marker_chars[idx]
+        rebus_squares = set(p.rebus().get_rebus_squares())
+        for i in rebus_squares:
+            sol = p.rebus().get_rebus_solution(i)
+            if sol and sol not in solution_to_short_char:
+                solution_to_short_char[sol] = p.solution[i]
+
+    circled_squares = set(p.markup().get_markup_squares(GridMarkup.Circled)) if has_mark else set()
 
     lines.append('<GRID>')
     for row_idx in range(p.height):
         row = ''
         for col_idx in range(p.width):
             i = row_idx * p.width + col_idx
-            if rebus and rebus.is_rebus_square(i):
-                sol = rebus.get_rebus_solution(i)
+            if i in rebus_squares:
+                sol = p.rebus().get_rebus_solution(i)
                 row += solution_to_marker.get(sol or '', p.solution[i])
-            elif has_mark and markup and markup.is_markup_square(i, [GridMarkup.Circled]):
+            elif i in circled_squares:
                 row += p.solution[i].lower()
             else:
                 row += p.solution[i]
@@ -1211,14 +1216,8 @@ def to_text_format(p: Puzzle, text_version: str = 'v1') -> str:
         if has_mark:
             lines.append(TAB + 'MARK;')
         if has_rebus:
-            assert rebus is not None
             for solution, marker in solution_to_marker.items():
-                # short_char is whatever single letter is stored in p.solution at a rebus square
-                short_char = solution[0]  # fallback
-                for i in range(p.width * p.height):
-                    if rebus.is_rebus_square(i) and rebus.get_rebus_solution(i) == solution:
-                        short_char = p.solution[i]
-                        break
+                short_char = solution_to_short_char.get(solution, solution[0])
                 lines.append(TAB + f'{marker}:{solution}:{short_char}')
 
     # get clues in across/down order
