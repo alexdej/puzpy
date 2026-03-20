@@ -6,7 +6,7 @@
 [![Coverage](https://img.shields.io/badge/dynamic/json?url=https://alexdej.github.io/puzpy/coverage/coverage.json&query=$.totals.percent_covered_display&suffix=%25&label=coverage)](https://alexdej.github.io/puzpy/coverage/)
 
 
-Python library to read and write crossword puzzle files in Across Lite `.puz` and/or `.txt` formats.
+Python library to read and write crossword puzzle files in Across Lite `.puz` and `.txt` formats.
 
 ## Installing
 

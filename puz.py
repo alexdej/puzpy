@@ -1029,8 +1029,11 @@ def to_text_format(p: Puzzle, text_version: str = 'v1') -> str:
     rebus = p.rebus() if p.has_rebus() else None
     has_rebus = rebus is not None and rebus.has_rebus()
 
-    # rebus requires v2 format; auto-upgrade if needed
-    if has_rebus and text_version == 'v1':
+    markup = p.markup() if p.has_markup() else None
+    has_mark = markup is not None and markup.has_markup([GridMarkup.Circled])
+
+    # rebus and MARK flag require v2 format; auto-upgrade if needed
+    if (has_rebus or has_mark) and text_version == 'v1':
         text_version = 'v2'
 
     if text_version == 'v1':
@@ -1067,21 +1070,26 @@ def to_text_format(p: Puzzle, text_version: str = 'v1') -> str:
             if rebus and rebus.is_rebus_square(i):
                 sol = rebus.get_rebus_solution(i)
                 row += solution_to_marker.get(sol or '', p.solution[i])
+            elif has_mark and markup and markup.is_markup_square(i, [GridMarkup.Circled]):
+                row += p.solution[i].lower()
             else:
                 row += p.solution[i]
         lines.append(TAB + row)
 
-    if has_rebus:
-        assert rebus is not None
+    if has_rebus or has_mark:
         lines.append('<REBUS>')
-        for solution, marker in solution_to_marker.items():
-            # short_char is whatever single letter is stored in p.solution at a rebus square
-            short_char = solution[0]  # fallback
-            for i in range(p.width * p.height):
-                if rebus.is_rebus_square(i) and rebus.get_rebus_solution(i) == solution:
-                    short_char = p.solution[i]
-                    break
-            lines.append(TAB + f'{marker}:{solution}:{short_char}')
+        if has_mark:
+            lines.append(TAB + 'MARK;')
+        if has_rebus:
+            assert rebus is not None
+            for solution, marker in solution_to_marker.items():
+                # short_char is whatever single letter is stored in p.solution at a rebus square
+                short_char = solution[0]  # fallback
+                for i in range(p.width * p.height):
+                    if rebus.is_rebus_square(i) and rebus.get_rebus_solution(i) == solution:
+                        short_char = p.solution[i]
+                        break
+                lines.append(TAB + f'{marker}:{solution}:{short_char}')
 
     # get clues in across/down order
     numbering = p.clue_numbering()
