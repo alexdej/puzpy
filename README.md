@@ -110,7 +110,7 @@ Python >=3.9 required since `0.3.1`. For older python versions including 2.x use
 
 ## Resources
 
-- [AcrossLite .puz file format](http://code.google.com/p/puz/wiki/FileFormat)
+- [AcrossLite .puz file format](FileFormat.md) (archived from http://code.google.com/p/puz/wiki/FileFormat)
 - [Across text format](https://www.litsoft.com/across/docs/AcrossTextFormat.pdf)
 - [Archive of NYT daily puzzles 1993 - August 2021](https://archive.org/details/nyt-puz)
 - [puz to pdf file converter](https://www.crosswordnexus.com/apps/puz-to-pdf/)
