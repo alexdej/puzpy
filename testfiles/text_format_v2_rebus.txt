@@ -1,0 +1,31 @@
+<ACROSS PUZZLE v2>
+<TITLE>
+	Rebus Text Format Test
+<AUTHOR>
+	Test
+<COPYRIGHT>
+	
+<SIZE>
+	5x5
+<GRID>
+	1TARS
+	2IGDE
+	FGHIJ
+	KLMNO
+	PQRST
+<REBUS>
+	1:STAR:S
+	2:BIG:B
+<ACROSS>
+	clue
+	clue
+	clue
+	clue
+	clue
+<DOWN>
+	clue
+	clue
+	clue
+	clue
+	clue
+<NOTEPAD>

@@ -436,6 +436,47 @@ def test_text_format() -> None:
     assert numbering.down[-1]['clue'] == 'Tax break savings account'
 
 
+def test_text_format_rebus() -> None:
+    p = puz.read_text('testfiles/text_format_v2_rebus.txt')
+    assert p.width == 5
+    assert p.height == 5
+    r = p.rebus()
+    assert r.has_rebus()
+    assert r.is_rebus_square(0)
+    assert r.get_rebus_solution(0) == 'STAR'
+    assert p.solution[0] == 'S'   # short char stored in solution
+    assert r.is_rebus_square(5)
+    assert r.get_rebus_solution(5) == 'BIG'
+    assert p.solution[5] == 'B'
+    assert not r.is_rebus_square(1)
+
+
+def test_text_format_rebus_mark_flag() -> None:
+    # MARK flag: lowercase letters in grid are treated as circled cells
+    # also tests blank lines in the REBUS section (which should be skipped)
+    text = '\n'.join([
+        '<ACROSS PUZZLE v2>',
+        '<TITLE>', '\tMARK Test',
+        '<AUTHOR>', '\t',
+        '<COPYRIGHT>', '\t',
+        '<SIZE>', '\t3x3',
+        '<GRID>', '\taBc', '\tDEF', '\tGHI',
+        '<REBUS>',
+        '',          # blank line — should be silently skipped
+        '\tMARK;',   # MARK flag
+        '<ACROSS>', '\tclue', '\tclue', '\tclue',
+        '<DOWN>', '\tclue', '\tclue', '\tclue',
+        '<NOTEPAD>', '',
+    ])
+    p = puz.from_text_format(text)
+    assert p.solution == 'ABCDEFGHI'   # lowercase letters uppercased
+    assert not p.rebus().has_rebus()   # MARK flag alone doesn't create rebus squares
+    m = p.markup()
+    assert m.is_markup_square(0, [puz.GridMarkup.Circled])
+    assert not m.is_markup_square(1, [puz.GridMarkup.Circled])  # 'B' — uppercase, not circled
+    assert m.is_markup_square(2, [puz.GridMarkup.Circled])
+
+
 def test_convert_text_to_puz() -> None:
     p = puz.read_text('testfiles/text_format_v1.txt')
     bytes = p.tobytes()
