@@ -790,13 +790,15 @@ def test_puzfile_roundtrip(filename: str) -> None:
 
 @pytest.mark.parametrize('filename', _not_bad(glob.glob('testfiles/*.puz')))
 def test_puzfile_roundtrip_with_helpers(filename: str) -> None:
-    # variation on the roundtrip test that also instantiates the Rebus and Markup
-    # helpers to verify that their save methods roundtrip properly
+    # variation on the roundtrip test that also instantiates the Rebus, Markup,
+    # and Timer helpers to verify that their save methods roundtrip properly
     with open(filename, 'rb') as fp:
         orig = fp.read()
         p = puz.read(filename)
         p.has_rebus()    # side effect: instantiates Rebus helper
         p.has_markup()   # side effect: instantiates Markup helper
+        if p.has_timer():
+            p.timer()    # side effect: instantiates Timer helper
         new = p.tobytes()
         assert orig == new, '%s did not round-trip' % filename
 
@@ -805,3 +807,43 @@ def test_puzfile_roundtrip_with_helpers(filename: str) -> None:
 def test_bad_puzfile_raises_puzzle_format_error(filename: str) -> None:
     with pytest.raises(puz.PuzzleFormatError):
         puz.read(filename)
+
+
+def test_timer_running() -> None:
+    p = puz.read('testfiles/nyt_partlyfilled.puz')
+    assert p.has_timer()
+    t = p.timer()
+    assert t.elapsed_seconds == 8
+    assert t.is_running()
+
+
+def test_no_timer() -> None:
+    p = puz.read('testfiles/washpost.puz')
+    assert not p.has_timer()
+
+
+def test_timer_save_roundtrip() -> None:
+    p = _make_puzzle()
+    t = p.timer()
+    t.elapsed_seconds = 42
+    t.status = puz.TimerStatus.Stopped
+    p.tobytes()  # triggers save()
+    assert p.extensions[puz.Extensions.Timer] == b'42,1'
+
+
+def test_timer_stopped() -> None:
+    p = _make_puzzle()
+    p.extensions[puz.Extensions.Timer] = b'120,1'
+    t = p.timer()
+    assert t.elapsed_seconds == 120
+    assert t.is_stopped()
+
+
+def test_remove_timer() -> None:
+    p = puz.read('testfiles/nyt_partlyfilled.puz')
+    assert p.has_timer()
+    p.timer()  # instantiate helper
+    p.remove_timer()
+    assert not p.has_timer()
+    p.tobytes()  # triggers save() which should remove the extension
+    assert puz.Extensions.Timer not in p.extensions

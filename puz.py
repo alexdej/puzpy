@@ -326,6 +326,18 @@ class Puzzle:
             self.helpers['rebus'] = Rebus(self)
         return cast('Rebus', self.helpers['rebus'])
 
+    def has_timer(self) -> bool:
+        return Extensions.Timer in self.extensions or 'timer' in self.helpers
+
+    def remove_timer(self) -> None:
+        self.extensions.pop(Extensions.Timer, None)
+        self.helpers.pop('timer', None)
+
+    def timer(self) -> 'Timer':
+        if 'timer' not in self.helpers:
+            self.helpers['timer'] = Timer(self)
+        return cast('Timer', self.helpers['timer'])
+
     def has_markup(self) -> bool:
         return self.markup().has_markup()
 
@@ -840,6 +852,30 @@ class Markup(PuzzleHelper):
             self.puzzle.extensions[Extensions.Markup] = pack_bytes(self.markup)
         elif self._dirty:
             self.puzzle.extensions.pop(Extensions.Markup, None)
+
+
+class TimerStatus(IntEnum):
+    Running = 0
+    Stopped = 1
+
+
+class Timer(PuzzleHelper):
+    def __init__(self, puzzle: Puzzle) -> None:
+        self.puzzle = puzzle
+        timer_data = self.puzzle.extensions.get(Extensions.Timer, b'0,1')
+        elapsed_str, status_str = timer_data.decode().split(',')
+
+        self.elapsed_seconds = int(elapsed_str)
+        self.status = TimerStatus(int(status_str))
+
+    def is_running(self) -> bool:
+        return self.status == TimerStatus.Running
+
+    def is_stopped(self) -> bool:
+        return self.status == TimerStatus.Stopped
+
+    def save(self) -> None:
+        self.puzzle.extensions[Extensions.Timer] = f'{self.elapsed_seconds},{self.status}'.encode()
 
 
 # helper functions for cksums and scrambling
