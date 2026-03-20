@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 (Mar 20, 2026)
+
+- LTIM (timer) support, with new Timer class that exposes timer status and elapsed_seconds
+- RUSR (rebus fill) support, so rebus user fill from Across Lite can be read/written.
+- check_rebus_answers() to validate rebus fill entries against their solutions
+- check_answers(strict=False) enables validation of a partially filled grid.
+- Across Lite Text Version 2 support: REBUS section and MARK flags (circled cells)
+- helper methods on Rebus and Markup to make it easier to create rebus table and markup
+- PEP 484-style type annotation throughout the project.
+
 ## 0.4.2 (Mar 19, 2026)
 
 - Increment version number
