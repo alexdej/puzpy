@@ -73,7 +73,8 @@ class Extensions(bytes, Enum):
     # map of rebus solution entries eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE;
     RebusSolutions = b'RTBL',
 
-    # user's rebus entries, same format as RebusSolutions
+    # user's rebus entries; binary grid format: one null-terminated string per cell (in grid order).
+    # empty cells are a single null byte; filled rebus cells are the fill string followed by a null byte.
     RebusFill = b'RUSR',
 
     # timer state: 'a,b' where a is the number of seconds elapsed and
@@ -662,9 +663,29 @@ class Grid:
 class Rebus(PuzzleHelper):
     def __init__(self, puzzle: Puzzle) -> None:
         self.puzzle = puzzle
-        self.fill: dict[int, str] = {}
+
+        N = self.puzzle.width * self.puzzle.height
+
+        self._dirty = False  # track whether there are unsaved changes to the rebus helper that need to be committed
+        # to the puzzle before saving
+
+        # the rebus table has the same number of entries as the grid and maps 1:1.
+        # cell values v > 0 represent rebus squares, where v corresponds to a solution key k=v-1 in the solutions map.
+        # 0 values indicate non-rebus squares.
+        self.table: list[int] = [0] * N
+
+        # the solutions table is a map of rebus solution key k (an int) to the corresponding solution string,
+        # eg 0:HEART;1:DIAMOND;17:CLUB;23:SPADE; k values need not be consecutive or in any order, but are
+        # typically numbered sequentially starting from 0. When k values appear in the rebus table, they are
+        # 1-indexed (ie v=k+1).
         self.solutions: dict[int, str] = {}
-        self.table: list[int] = [0] * (self.puzzle.width * self.puzzle.height)
+
+        # the fill table has the same number of entries as the grid and maps 1:1. Each cell value is a string
+        # representing the user's current fill for that cell, eg "STAR". Non-filled cells and non-rebus cells
+        # are empty strings.
+        # When a cell is a rebus entry, the corresponding cell in puzzle.fill will often be set to the first
+        # letter of the rebus, eg 'S' for "STAR".
+        self.fill: list[str] = []
 
         # parse rebus data
         if Extensions.Rebus in self.puzzle.extensions:
@@ -680,28 +701,44 @@ class Rebus(PuzzleHelper):
             }
 
         if Extensions.RebusFill in self.puzzle.extensions:
-            raw_fill_data = self.puzzle.extensions[Extensions.RebusFill]
-            fill_str = raw_fill_data.decode(puzzle.encoding)
-            self.fill = {
-                int(item[0]): item[1]
-                for item in parse_dict(fill_str).items()
-            }
+            s = PuzzleBuffer(self.puzzle.extensions[Extensions.RebusFill], encoding=puzzle.encoding)
+            fill = []
+            while s.can_read():
+                fill.append(s.read_string())
+            self.fill = (fill + [''] * N)[:N]
+        else:
+            self.fill = [''] * N
 
     def has_rebus(self) -> bool:
         return Extensions.Rebus in self.puzzle.extensions or any(self.table)
 
     def is_rebus_square(self, index: int) -> bool:
-        return bool(self.table[index])
+        return self.table[index] > 0
 
     def get_rebus_squares(self) -> list[int]:
-        return [i for i, b in enumerate(self.table) if b]
+        return [i for i, k in enumerate(self.table) if k > 0]
+
+    def add_rebus_squares(self, squares: int | list[int], solution: str) -> None:
+        if isinstance(squares, int):
+            squares = [squares]
+
+        k = self.add_rebus_solution(solution)
+        for i in squares:
+            self.table[i] = k + 1  # rebus value is 1-indexed because 0 is reserved for non-rebus squares
 
     def add_rebus_solution(self, solution: str) -> int:
-        index = next((i for i, s in self.solutions.items() if s == solution), -1)
-        if index < 0:
-            index = len(self.solutions)  # add to end of solutions
-            self.solutions[index] = solution
-        return index
+        k = next((i for i, s in self.solutions.items() if s == solution), -1)
+        if k < 0:
+            k = len(self.solutions)  # add to end of solutions
+            self.solutions[k] = solution
+        return k
+
+    def check_rebus_fill(self, index: int) -> bool:
+        if self.is_rebus_square(index):
+            solution = self.get_rebus_solution(index)
+            fill = self.get_rebus_fill(index)
+            return solution == fill
+        return False
 
     def get_rebus_solution(self, index: int) -> str | None:
         if self.is_rebus_square(index):
@@ -709,7 +746,7 @@ class Rebus(PuzzleHelper):
             # so we need to subtract 1 to get the correct solution from the map
             return self.solutions[self.table[index] - 1]
         return None
-    
+
     def set_rebus_solution(self, index: int, solution: str) -> None:
         if self.is_rebus_square(index):
             solution_index = self.add_rebus_solution(solution)
@@ -717,53 +754,92 @@ class Rebus(PuzzleHelper):
 
     def get_rebus_fill(self, index: int) -> str | None:
         if self.is_rebus_square(index):
-            # rebus value is 1-indexed because 0 is reserved for non-rebus squares
-            # so we need to subtract 1 to get the correct fill from the map
-            return self.fill[self.table[index] - 1]
+            return self.fill[index] or None
         return None
+
+    def remove_rebus_squares(self, squares: int | list[int]) -> None:
+        if isinstance(squares, int):
+            squares = [squares]
+
+        for i in squares:
+            self.table[i] = 0
+            self._dirty = True
+
+    def remove_rebus_solution(self, solution: str | int) -> None:
+        if isinstance(solution, str):
+            k = next((i for i, s in self.solutions.items() if s == solution), -1)
+        else:
+            k = solution
+        if k >= 0:
+            del self.solutions[k]
+            for i, v in enumerate(self.table):
+                if v == k + 1:  # rebus value is 1-indexed because 0 is reserved for non-rebus squares
+                    self.table[i] = 0
+            self._dirty = True
 
     def set_rebus_fill(self, index: int, value: str) -> None:
         if self.is_rebus_square(index):
-            self.fill[self.table[index] - 1] = value
+            self.fill[index] = value
 
     def save(self) -> None:
         if self.has_rebus():
-            # commit changes back to puzzle.extensions
             self.puzzle.extensions[Extensions.Rebus] = pack_bytes(self.table)
             if self.solutions:
-                rebus_solutions = self.puzzle.encode(dict_to_string(self.solutions))
-                self.puzzle.extensions[Extensions.RebusSolutions] = rebus_solutions
-            if self.fill:
-                rebus_fill = self.puzzle.encode(dict_to_string(self.fill))
-                self.puzzle.extensions[Extensions.RebusFill] = rebus_fill
+                self.puzzle.extensions[Extensions.RebusSolutions] = self.puzzle.encode(dict_to_string(self.solutions))
+            else:
+                self.puzzle.extensions.pop(Extensions.RebusSolutions, None)
+            if any(self.fill) or Extensions.RebusFill in self.puzzle.extensions:
+                s = PuzzleBuffer(encoding=self.puzzle.encoding)
+                for cell_fill in self.fill:
+                    s.write_string(cell_fill)
+                self.puzzle.extensions[Extensions.RebusFill] = s.tobytes()
+            else:
+                self.puzzle.extensions.pop(Extensions.RebusFill, None)
+        elif self._dirty:
+            self.puzzle.extensions.pop(Extensions.Rebus, None)
+            self.puzzle.extensions.pop(Extensions.RebusSolutions, None)
+            self.puzzle.extensions.pop(Extensions.RebusFill, None)
 
 
 class Markup(PuzzleHelper):
     def __init__(self, puzzle: Puzzle) -> None:
         self.puzzle = puzzle
-        # parse markup data
+        self._dirty = False  # track whether there are unsaved changes to the markup helper that need to be committed
         markup_data = self.puzzle.extensions.get(Extensions.Markup, b'')
         self.markup = parse_bytes(markup_data) or [0] * (self.puzzle.width * self.puzzle.height)
 
-    def has_markup(self, markup_types: list[GridMarkup] | None = None) -> bool:
-        markup_mask = sum(markup_types) if markup_types else 0xff
+    def clear_markup_squares(self, indices: list[int] | int, markup_types: list[GridMarkup] | GridMarkup | None = None) -> None:  # noqa: E501
+        if isinstance(indices, int):
+            indices = [indices]
+        markup_mask = sum(markup_types) if isinstance(markup_types, list) else markup_types if markup_types else 0xff
+        for i in indices:
+            self.markup[i] &= ~markup_mask
+            self._dirty = True
+
+    def has_markup(self, markup_types: list[GridMarkup] | GridMarkup | None = None) -> bool:
+        markup_mask = sum(markup_types) if isinstance(markup_types, list) else markup_types if markup_types else 0xff
         return any(bool(b & markup_mask) for b in self.markup)
 
-    def get_markup_squares(self, markup_types: list[GridMarkup] | None = None) -> list[int]:
-        markup_mask = sum(markup_types) if markup_types else 0xff
+    def get_markup_squares(self, markup_types: list[GridMarkup] | GridMarkup | None = None) -> list[int]:
+        markup_mask = sum(markup_types) if isinstance(markup_types, list) else markup_types if markup_types else 0xff
         return [i for i, b in enumerate(self.markup) if b & markup_mask]
 
-    def is_markup_square(self, index: int, markup_types: list[GridMarkup] | None = None) -> bool:
-        markup_mask = sum(markup_types) if markup_types else 0xff
+    def is_markup_square(self, index: int, markup_types: list[GridMarkup] | GridMarkup | None = None) -> bool:
+        markup_mask = sum(markup_types) if isinstance(markup_types, list) else markup_types if markup_types else 0xff
         return bool(self.markup[index] & markup_mask)
 
-    def set_markup_squares(self, indices: list[int], markup_type: GridMarkup) -> None:
+    def set_markup_squares(self, indices: list[int] | int, markup_type: list[GridMarkup] | GridMarkup | None = None) -> None:
+        if isinstance(indices, int):
+            indices = [indices]
+        markup_mask = sum(markup_type) if isinstance(markup_type, list) else markup_type if markup_type else 0xff
         for i in indices:
-            self.markup[i] |= markup_type
+            self.markup[i] |= markup_mask
 
     def save(self) -> None:
         if self.has_markup():
             self.puzzle.extensions[Extensions.Markup] = pack_bytes(self.markup)
+        elif self._dirty:
+            self.puzzle.extensions.pop(Extensions.Markup, None)
 
 
 # helper functions for cksums and scrambling

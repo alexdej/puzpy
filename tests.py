@@ -115,6 +115,15 @@ def test_rebus() -> None:
     for i in r.get_rebus_squares():
         assert r.is_rebus_square(i)
         assert 'STAR' == r.get_rebus_solution(i)
+
+    i = r.get_rebus_squares()[0]
+    r.set_rebus_fill(i, 'STAR')
+    assert r.check_rebus_fill(i)
+
+    i = r.get_rebus_squares()[-1]
+    r.set_rebus_fill(i, 'HEART')
+    assert not r.check_rebus_fill(i)
+
     assert r.get_rebus_solution(100) is None
 
 
