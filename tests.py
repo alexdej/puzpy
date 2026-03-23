@@ -1085,7 +1085,7 @@ def test_viewer_batch(tmp_path: pathlib.Path) -> None:
         'testfiles/washpost.puz',
         'testfiles/text_format_v1.txt',
         'testfiles/ONE_bad.puz',
-        '-o', outdir, '--index',
+        '--outdir', outdir, '--index',
     ]
     puz_viewer.main()
     assert os.path.isfile(os.path.join(outdir, 'washpost.html'))

@@ -452,12 +452,15 @@ def main() -> None:
         description='Generate an HTML viewer for a crossword puzzle'
     )
     parser.add_argument(
-        'puzzle', nargs='*', default=['-'],
+        'puzzles', nargs='*', default=['-'],
         help='Path to .puz or .txt files (default: stdin)'
     )
     parser.add_argument(
-        '-o', '--output',
+        '-o', '--outfile',
         help='Output HTML file (single) or directory (batch)'
+    )
+    parser.add_argument(
+        '--outdir', help='Output directory'
     )
     parser.add_argument(
         '-f', '--format', choices=['auto', 'puz', 'txt'], default='auto',
@@ -469,9 +472,15 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    outdir = args.outdir or '.'
+
+    def default_outfile(src: str) -> str:
+        base = os.path.splitext(os.path.basename(src))[0]
+        return base + '.html'
+
     # Single file mode: one puzzle to stdout or -o file
-    if len(args.puzzle) == 1 and not args.index:
-        src = args.puzzle[0]
+    if len(args.puzzles) == 1 and not args.index:
+        src = args.puzzles[0]
         if src == '-':
             raw = sys.stdin.buffer.read()
         else:
@@ -479,9 +488,10 @@ def main() -> None:
                 raw = f.read()
         p = _load_puzzle(raw, args.format)
         out = render_html(p)
-        if args.output:
-            with open(args.output, 'w', encoding='utf-8') as f:
-                f.write(out)
+        if args.outfile or args.outdir:
+            outfile = os.path.join(outdir, args.outfile or default_outfile(src))
+            with open(outfile, 'w', encoding='utf-8') as fout:
+                fout.write(out)
         else:
             if hasattr(sys.stdout, 'reconfigure'):
                 sys.stdout.reconfigure(encoding='utf-8')
@@ -489,18 +499,17 @@ def main() -> None:
         return
 
     # Batch mode: multiple puzzles to output directory
-    outdir = args.output or '.'
     os.makedirs(outdir, exist_ok=True)
     generated: list[str] = []
-    for src in args.puzzle:
-        name = os.path.splitext(os.path.basename(src))[0] + '.html'
+    for src in args.puzzles:
+        name = default_outfile(src)
         try:
             with open(src, 'rb') as f:
                 raw = f.read()
             p = _load_puzzle(raw, args.format)
             out = render_html(p)
-            with open(os.path.join(outdir, name), 'w', encoding='utf-8') as f:
-                f.write(out)
+            with open(os.path.join(outdir, name), 'w', encoding='utf-8') as fout:
+                fout.write(out)
             generated.append(name)
             print(f'OK: {src}', file=sys.stderr)
         except Exception as e:
