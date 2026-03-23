@@ -34,24 +34,20 @@ p = puz.read('testfiles/washpost.puz')
 # Print all clues and their answers
 #
 clues = p.clue_numbering()
-solution = puz.Grid(p.solution, p.width, p.height)
 
 print('Across')
 for clue in clues.across:
-    answer = solution.get_string_for_clue(clue)
-    print(clue['num'], clue['clue'], '-', answer)
+    print(clue.number, clue.text, '-', clue.solution)
 
 print('Down')
 for clue in clues.down:
-    answer = solution.get_string_for_clue(clue)
-    print(clue['num'], clue['clue'], '-', answer)
+    print(clue.number, clue.text, '-', clue.solution)
 
 #
 # Print the puzzle grid
 #
-grid = puz.Grid(p.fill, p.width, p.height)
-for row in range(p.height):
-    print(' '.join(grid.get_row(row)))
+for row in p.grid():
+    print(' '.join(row))
 
 #
 # Unlock a puzzle that has a locked solution
@@ -59,9 +55,8 @@ for row in range(p.height):
 p.unlock_solution(7844)
 
 # Now print the unscrambed solution grid:
-solution = puz.Grid(p.solution, p.width, p.height)
-for row in range(p.height):
-    print(' '.join(solution.get_row(row)))
+for row in p.solution_grid():
+    print(' '.join(row))
 
 #
 # Save a puzzle with modifications:
