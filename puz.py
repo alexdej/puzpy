@@ -7,7 +7,7 @@ import math
 import string
 import struct
 from enum import Enum, IntEnum
-from typing import Any, Iterable, Protocol, TypedDict, cast, runtime_checkable
+from typing import Any, Iterable, Iterator, Protocol, TypedDict, cast, runtime_checkable
 
 __version__ = importlib.metadata.version('puzpy')
 
@@ -461,6 +461,12 @@ class Puzzle:
 
         return cksum_magic
 
+    def grid(self) -> 'Grid':
+        return Grid(self.fill, self.width, self.height)
+
+    def solution_grid(self) -> 'Grid':
+        return Grid(self.solution, self.width, self.height)
+
 
 class PuzzleBuffer:
     """PuzzleBuffer class
@@ -679,6 +685,17 @@ class Grid:
 
     def get_range_for_clue(self, clue: ClueEntry) -> list[str]:
         return self.get_range(clue['row'], clue['col'], clue['len'], clue['dir'])
+
+    def __iter__(self) -> Iterator[list[str]]:
+        return self.rows()
+
+    def rows(self) -> Iterator[list[str]]:
+        for row in range(self.height):
+            yield self.get_row(row)
+
+    def cols(self) -> Iterator[list[str]]:
+        for col in range(self.width):
+            yield self.get_column(col)
 
     def get_row(self, row: int) -> list[str]:
         return self.get_range_across(row, 0, self.width)

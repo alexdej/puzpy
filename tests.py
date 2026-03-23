@@ -74,6 +74,32 @@ def test_grid() -> None:
     with pytest.raises(AssertionError):
         soln.get_range(0, 0, 4, dir='diagonal')
 
+    # rows() yields each row as a list of cells
+    rows = list(soln.rows())
+    assert len(rows) == p.height
+    assert rows[0] == soln.get_row(0)
+    assert rows[-1] == soln.get_row(p.height - 1)
+
+    # cols() yields each column as a list of cells
+    cols = list(soln.cols())
+    assert len(cols) == p.width
+    assert cols[0] == soln.get_column(0)
+    assert cols[-1] == soln.get_column(p.width - 1)
+
+    # iterating a Grid is equivalent to rows()
+    assert list(soln) == rows
+
+    # factory methods on Puzzle
+    fill_grid = p.grid()
+    assert isinstance(fill_grid, puz.Grid)
+    assert fill_grid.grid == p.fill
+    assert fill_grid.width == p.width
+    assert fill_grid.height == p.height
+
+    sol_grid = p.solution_grid()
+    assert isinstance(sol_grid, puz.Grid)
+    assert sol_grid.grid == p.solution
+
 
 def test_diagramless_clue_numbering() -> None:
     p = puz.read('testfiles/nyt_diagramless.puz')
