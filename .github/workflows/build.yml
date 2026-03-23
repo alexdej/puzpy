@@ -63,14 +63,7 @@ jobs:
     - name: Run coverage
       run: pytest --cov --cov-report=html:site/coverage --cov-report=json:site/coverage/coverage.json
     - name: Generate puzzle viewers
-      run: |
-        mkdir -p site/viewer
-        for f in testfiles/*.puz testfiles/*.txt; do
-          name=$(basename "${f%.*}")
-          python puz_viewer.py "$f" -o "site/viewer/${name}.html" \
-            && echo "OK: $f" || echo "SKIP: $f"
-        done
-        python puz_viewer.py --index site/viewer
+      run: python puz_viewer.py testfiles/*.puz testfiles/*.txt -o site/viewer --index
     - name: Upload pages artifact
       uses: actions/upload-pages-artifact@v3
       with:

@@ -1,5 +1,4 @@
 import argparse
-import glob
 import html as html_lib
 import json
 import os
@@ -416,14 +415,9 @@ a:hover { background: #f6f8fa; }
 """
 
 
-def _generate_index(directory: str) -> None:
-    files = sorted(
-        os.path.basename(f)
-        for f in glob.glob(os.path.join(directory, '*.html'))
-        if os.path.basename(f) != 'index.html'
-    )
+def _generate_index(directory: str, files: list[str]) -> None:
     items = '\n'.join(
-        f'<li><a href="{f}">{f}</a></li>' for f in files
+        f'<li><a href="{f}">{f}</a></li>' for f in sorted(files)
     )
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -446,47 +440,74 @@ def _generate_index(directory: str) -> None:
         f.write(html)
 
 
+def _load_puzzle(raw: bytes, fmt: str) -> puz.Puzzle:
+    resolved = fmt if fmt != 'auto' else _detect_format(raw)
+    if resolved == 'puz':
+        return puz.load(raw)
+    return puz.load_text(raw.decode())
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description='Generate an HTML viewer for a crossword puzzle'
     )
     parser.add_argument(
-        'puzzle', nargs='?', default='-',
-        help='Path to .puz or .txt file (default: stdin)'
+        'puzzle', nargs='*', default=['-'],
+        help='Path to .puz or .txt files (default: stdin)'
     )
-    parser.add_argument('-o', '--output', help='Output HTML file (default: stdout)')
+    parser.add_argument(
+        '-o', '--output',
+        help='Output HTML file (single) or directory (batch)'
+    )
     parser.add_argument(
         '-f', '--format', choices=['auto', 'puz', 'txt'], default='auto',
         help='Input format (default: auto-detect)'
     )
     parser.add_argument(
-        '--index', metavar='DIR',
-        help='Generate an index.html for viewer files in DIR'
+        '--index', action='store_true',
+        help='Generate index.html in output directory (batch mode)'
     )
     args = parser.parse_args()
 
-    if args.index:
-        _generate_index(args.index)
+    # Single file mode: one puzzle to stdout or -o file
+    if len(args.puzzle) == 1 and not args.index:
+        src = args.puzzle[0]
+        if src == '-':
+            raw = sys.stdin.buffer.read()
+        else:
+            with open(src, 'rb') as f:
+                raw = f.read()
+        p = _load_puzzle(raw, args.format)
+        out = render_html(p)
+        if args.output:
+            with open(args.output, 'w', encoding='utf-8') as f:
+                f.write(out)
+        else:
+            if hasattr(sys.stdout, 'reconfigure'):
+                sys.stdout.reconfigure(encoding='utf-8')
+            sys.stdout.write(out)
         return
 
-    if args.puzzle == '-':
-        raw = sys.stdin.buffer.read()
-    else:
-        with open(args.puzzle, 'rb') as f:
-            raw = f.read()
+    # Batch mode: multiple puzzles to output directory
+    outdir = args.output or '.'
+    os.makedirs(outdir, exist_ok=True)
+    generated: list[str] = []
+    for src in args.puzzle:
+        name = os.path.splitext(os.path.basename(src))[0] + '.html'
+        try:
+            with open(src, 'rb') as f:
+                raw = f.read()
+            p = _load_puzzle(raw, args.format)
+            out = render_html(p)
+            with open(os.path.join(outdir, name), 'w', encoding='utf-8') as f:
+                f.write(out)
+            generated.append(name)
+            print(f'OK: {src}', file=sys.stderr)
+        except Exception as e:
+            print(f'SKIP: {src} ({e})', file=sys.stderr)
 
-    fmt = args.format if args.format != 'auto' else _detect_format(raw)
-    p = puz.load(raw) if fmt == 'puz' else puz.load_text(raw.decode())
-
-    out = render_html(p)
-
-    if args.output:
-        with open(args.output, 'w', encoding='utf-8') as f:
-            f.write(out)
-    else:
-        if hasattr(sys.stdout, 'reconfigure'):
-            sys.stdout.reconfigure(encoding='utf-8')
-        sys.stdout.write(out)
+    if args.index:
+        _generate_index(outdir, generated)
 
 
 if __name__ == '__main__':
