@@ -1,6 +1,8 @@
 import argparse
+import glob
 import html as html_lib
 import json
+import os
 import sys
 from typing import Any
 
@@ -393,6 +395,57 @@ const PUZZLE = {puzzle_json};
 </html>"""
 
 
+_INDEX_CSS = """\
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
+    Arial, sans-serif;
+  color: #1f2328; background: #fff; line-height: 1.5;
+  max-width: 640px; margin: 0 auto; padding: 40px 24px;
+}
+h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+.subtitle { font-size: 14px; color: #656d76; margin-bottom: 24px; }
+ul { list-style: none; }
+li { border-top: 1px solid #d1d9e0; }
+li:last-child { border-bottom: 1px solid #d1d9e0; }
+a {
+  display: block; padding: 10px 4px; color: #0969da;
+  text-decoration: none; font-size: 14px;
+}
+a:hover { background: #f6f8fa; }
+"""
+
+
+def _generate_index(directory: str) -> None:
+    files = sorted(
+        os.path.basename(f)
+        for f in glob.glob(os.path.join(directory, '*.html'))
+        if os.path.basename(f) != 'index.html'
+    )
+    items = '\n'.join(
+        f'<li><a href="{f}">{f}</a></li>' for f in files
+    )
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>puzpy viewer</title>
+<style>
+{_INDEX_CSS}
+</style>
+</head>
+<body>
+<h1>puzpy viewer</h1>
+<p class="subtitle">Sample crossword puzzles rendered by puz_viewer</p>
+<ul>
+{items}
+</ul>
+</body>
+</html>"""
+    with open(os.path.join(directory, 'index.html'), 'w', encoding='utf-8') as f:
+        f.write(html)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description='Generate an HTML viewer for a crossword puzzle'
@@ -406,7 +459,15 @@ def main() -> None:
         '-f', '--format', choices=['auto', 'puz', 'txt'], default='auto',
         help='Input format (default: auto-detect)'
     )
+    parser.add_argument(
+        '--index', metavar='DIR',
+        help='Generate an index.html for viewer files in DIR'
+    )
     args = parser.parse_args()
+
+    if args.index:
+        _generate_index(args.index)
+        return
 
     if args.puzzle == '-':
         raw = sys.stdin.buffer.read()
