@@ -449,26 +449,26 @@ def _load_puzzle(raw: bytes, fmt: str) -> puz.Puzzle:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description='Generate an HTML viewer for a crossword puzzle'
+        description="Generate an HTML viewer for a crossword puzzle or puzzles"
     )
     parser.add_argument(
         'puzzles', nargs='*', default=['-'],
-        help='Path to .puz or .txt files (default: stdin)'
+        help="Paths to .puz or .txt files (default: stdin)"
     )
     parser.add_argument(
         '-o', '--outfile',
-        help='Output HTML file (single) or directory (batch)'
+        help="Output HTML filename (default: stdout, or auto-generated from input filename in batch mode)"
     )
     parser.add_argument(
-        '--outdir', help='Output directory'
+        '--outdir', help="Output directory for HTML files (default: .)"
     )
     parser.add_argument(
         '-f', '--format', choices=['auto', 'puz', 'txt'], default='auto',
-        help='Input format (default: auto-detect)'
+        help="Input format (default: auto-detect)"
     )
     parser.add_argument(
         '--index', action='store_true',
-        help='Generate index.html in output directory (batch mode)'
+        help="Generate index.html in output directory (batch mode)"
     )
     args = parser.parse_args()
 

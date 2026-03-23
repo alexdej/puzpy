@@ -98,6 +98,28 @@ pytest -v
 flake8 . --show-source --statistics
 ```
 
+## Viewer
+
+This project comes with a bundled puz file viewer. Examples: [15x15](https://alexdej.github.io/puzpy/viewer/washpost.html), [21x21](https://alexdej.github.io/puzpy/viewer/wsj110624.html)
+```skip
+$ python -m puz_viewer --help
+usage: puz_viewer.py [-h] [-o OUTFILE] [--outdir OUTDIR] [-f {auto,puz,txt}] [--index] [puzzles ...]
+
+Generate an HTML viewer for a crossword puzzle or puzzles
+
+positional arguments:
+  puzzles               Paths to .puz or .txt files (default: stdin)
+
+options:
+  -h, --help            show this help message and exit
+  -o, --outfile OUTFILE
+                        Output HTML filename (default: stdout, or auto-generated from input filename in batch mode)
+  --outdir OUTDIR       Output directory for HTML files (default: .)
+  -f, --format {auto,puz,txt}
+                        Input format (default: auto-detect)
+  --index               Generate index.html in output directory (batch mode)
+```
+
 ## Python version support
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/puzpy)
 
