@@ -34,17 +34,14 @@ p = puz.read('testfiles/washpost.puz')
 # Print all clues and their answers
 #
 clues = p.clue_numbering()
-solution = p.solution_grid()
 
 print('Across')
 for clue in clues.across:
-    answer = solution.get_string_for_clue(clue)
-    print(clue['num'], clue['clue'], '-', answer)
+    print(clue.number, clue.text, '-', clue.solution)
 
 print('Down')
 for clue in clues.down:
-    answer = solution.get_string_for_clue(clue)
-    print(clue['num'], clue['clue'], '-', answer)
+    print(clue.number, clue.text, '-', clue.solution)
 
 #
 # Print the puzzle grid

@@ -20,7 +20,13 @@ def test_clue_numbering() -> None:
     assert len(p.clues) == len(clues.across) + len(clues.down)
     assert len(p.clues) > 0
 
+    # clue_numbering() returns a ClueNumbering (which is still a DefaultClueNumbering)
+    assert isinstance(clues, puz.ClueNumbering)
+    assert isinstance(clues, puz.DefaultClueNumbering)
+
     a1 = clues.across[0]
+
+    # legacy dict access still works
     assert a1['num'] == 1
     assert a1['dir'] == 'across'
     assert a1['clue'] == "Mary's pet"
@@ -29,8 +35,23 @@ def test_clue_numbering() -> None:
     assert a1['row'] == 0
     assert a1['col'] == 0
     assert a1['len'] == 4
-
     assert a1['clue'] == p.clues[a1['clue_index']]
+
+    # ClueEntry is a dict
+    assert isinstance(a1, dict)
+
+    # clean property access
+    assert a1.number == 1
+    assert a1.direction == 'across'
+    assert a1.text == "Mary's pet"
+    assert a1.cell == 0
+    assert a1.row == 0
+    assert a1.col == 0
+    assert a1.length == 4
+
+    # fill() and solution() return the answer string for this clue
+    assert a1.solution == 'LAMB'
+    assert len(a1.fill) == a1.length
 
     d1 = clues.down[0]
     assert d1['num'] == 1
@@ -41,8 +62,12 @@ def test_clue_numbering() -> None:
     assert d1['row'] == 0
     assert d1['col'] == 0
     assert d1['len'] == 4
-
     assert d1['clue'] == p.clues[d1['clue_index']]
+
+    assert d1.number == 1
+    assert d1.direction == 'down'
+    assert d1.text == "Hit high in the air"
+    assert d1.solution == 'LOFT'
 
 
 def test_grid() -> None:
@@ -219,7 +244,7 @@ def test_repr() -> None:
     assert repr(p).startswith('Puzzle(')
     assert repr(p.rebus()).startswith('Rebus(')
     assert repr(p.markup()).startswith('Markup(')
-    assert repr(p.clue_numbering()).startswith('DefaultClueNumbering(')
+    assert repr(p.clue_numbering()).startswith('ClueNumbering(')
     assert repr(puz.Grid(p.solution, p.width, p.height)).startswith('Grid(')
     assert repr(puz.PuzzleBuffer(b'test')).startswith('PuzzleBuffer(')
     p2 = puz.read('testfiles/nyt_partlyfilled.puz')

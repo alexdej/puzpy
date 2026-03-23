@@ -7,7 +7,7 @@ import math
 import string
 import struct
 from enum import Enum, IntEnum
-from typing import Any, Iterable, Iterator, Protocol, TypedDict, cast, runtime_checkable
+from typing import Any, Iterable, Iterator, Protocol, cast, runtime_checkable
 
 __version__ = importlib.metadata.version('puzpy')
 
@@ -88,15 +88,56 @@ class Extensions(bytes, Enum):
     Markup = b'GEXT'
 
 
-class ClueEntry(TypedDict):
-    num: int
-    clue: str | None  # None until filled in by DefaultClueNumbering.__init__
-    clue_index: int
-    cell: int
-    row: int
-    col: int
-    len: int
-    dir: str
+class ClueEntry(dict[str, Any]):
+    """A clue entry in a crossword puzzle.
+
+    Supports legacy dict-style access (e.g. entry['num']) for backwards
+    compatibility, as well as named property access (e.g. entry.number).
+    """
+
+    _puzzle: 'Puzzle | None'
+
+    def __init__(self, data: dict[str, Any], puzzle: 'Puzzle | None' = None) -> None:
+        super().__init__(data)
+        self._puzzle = puzzle
+
+    @property
+    def number(self) -> int:
+        return cast(int, self['num'])
+
+    @property
+    def text(self) -> str:
+        return cast(str, self['clue'])
+
+    @property
+    def length(self) -> int:
+        return cast(int, self['len'])
+
+    @property
+    def direction(self) -> str:
+        return cast(str, self['dir'])
+
+    @property
+    def row(self) -> int:
+        return cast(int, self['row'])
+
+    @property
+    def col(self) -> int:
+        return cast(int, self['col'])
+
+    @property
+    def cell(self) -> int:
+        return cast(int, self['cell'])
+
+    @property
+    def solution(self) -> str:
+        assert self._puzzle is not None, 'ClueEntry has no puzzle reference'
+        return Grid(self._puzzle.solution, self._puzzle.width, self._puzzle.height).get_string_for_clue(self)
+
+    @property
+    def fill(self) -> str:
+        assert self._puzzle is not None, 'ClueEntry has no puzzle reference'
+        return Grid(self._puzzle.fill, self._puzzle.width, self._puzzle.height).get_string_for_clue(self)
 
 
 def read(filename: str) -> 'Puzzle':
@@ -353,10 +394,10 @@ class Puzzle:
             self.helpers['markup'] = Markup(self)
         return cast('Markup', self.helpers['markup'])
 
-    def clue_numbering(self) -> 'DefaultClueNumbering':
+    def clue_numbering(self) -> 'ClueNumbering':
         if 'clues' not in self.helpers:
-            self.helpers['clues'] = DefaultClueNumbering(self.fill, self.clues, self.width, self.height)
-        return cast('DefaultClueNumbering', self.helpers['clues'])
+            self.helpers['clues'] = ClueNumbering(self)
+        return cast('ClueNumbering', self.helpers['clues'])
 
     def blacksquare(self) -> str:
         return BLACKSQUARE2 if self.puzzletype == PuzzleType.Diagramless else BLACKSQUARE
@@ -651,6 +692,18 @@ class DefaultClueNumbering(PuzzleHelper):
             if is_blacksquare(self.grid[index + c*self.width]):
                 return c
         return c + 1
+
+
+class ClueNumbering(DefaultClueNumbering):
+    def __repr__(self) -> str:
+        return f'ClueNumbering(across={len(self.across)}, down={len(self.down)})'
+
+    def __init__(self, puzzle: 'Puzzle') -> None:
+        super().__init__(puzzle.solution, puzzle.clues, puzzle.width, puzzle.height)
+        for entry in self.across:
+            entry._puzzle = puzzle
+        for entry in self.down:
+            entry._puzzle = puzzle
 
 
 class Grid:
