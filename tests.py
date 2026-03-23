@@ -247,6 +247,7 @@ def test_repr() -> None:
     assert repr(p.rebus()).startswith('Rebus(')
     assert repr(p.markup()).startswith('Markup(')
     assert repr(p.clue_numbering()).startswith('ClueNumbering(')
+    assert repr(puz.DefaultClueNumbering(p.fill, p.clues, p.width, p.height)).startswith('DefaultClueNumbering(')
     assert repr(puz.Grid(p.solution, p.width, p.height)).startswith('Grid(')
     assert repr(puz.PuzzleBuffer(b'test')).startswith('PuzzleBuffer(')
     p2 = puz.read('testfiles/nyt_partlyfilled.puz')
