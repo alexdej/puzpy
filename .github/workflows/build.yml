@@ -6,6 +6,8 @@ name: Build and run tests
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
   push:
     branches: [ master ]
   pull_request:
@@ -36,7 +38,10 @@ jobs:
 
   coverage:
     needs: run-tests
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: >
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -57,6 +62,24 @@ jobs:
         pip install -e ".[dev]"
     - name: Run coverage
       run: pytest --cov --cov-report=html:site/coverage --cov-report=json:site/coverage/coverage.json
+    - name: Generate puzzle viewers
+      run: |
+        mkdir -p site/viewer
+        for f in testfiles/*.puz testfiles/*.txt; do
+          name=$(basename "${f%.*}")
+          python puz_viewer.py "$f" -o "site/viewer/${name}.html" \
+            && echo "OK: $f" || echo "SKIP: $f"
+        done
+        {
+          echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+          echo '<title>Puzzle Viewers</title></head><body><h1>Puzzle Viewers</h1><ul>'
+          for h in site/viewer/*.html; do
+            name=$(basename "$h")
+            [ "$name" = "index.html" ] && continue
+            echo "<li><a href=\"$name\">$name</a></li>"
+          done
+          echo '</ul></body></html>'
+        } > site/viewer/index.html
     - name: Upload pages artifact
       uses: actions/upload-pages-artifact@v3
       with:
