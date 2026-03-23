@@ -1,9 +1,11 @@
 import os
+import sys
 import tempfile
 import pytest
 import glob
 
 import puz
+import puz_viewer
 
 
 def temp_filename(suffix: str = 'puz') -> str:
@@ -985,3 +987,91 @@ def test_remove_timer() -> None:
     assert not p.has_timer()
     p.tobytes()  # triggers save() which should remove the extension
     assert puz.Extensions.Timer not in p.extensions
+
+
+def test_viewer() -> None:
+    p = puz.read('testfiles/washpost.puz')
+    html = puz_viewer.render_html(p)
+
+    assert '<!DOCTYPE html>' in html
+    assert p.title in html
+    assert p.author in html
+
+    clues = p.clue_numbering()
+    assert clues.across[0].text in html
+    assert clues.down[0].text in html
+
+    # one black entry per black square in the puzzle JSON data
+    black_count = sum(1 for c in p.solution if puz.is_blacksquare(c))
+    assert html.count('"type": "black"') == black_count
+
+    # JS layout engine and structural elements are present
+    assert 'const PUZZLE =' in html
+    assert 'id="grid"' in html
+    assert 'id="content"' in html
+    assert '<script>' in html
+
+    # no-title and no-author: original text absent from output
+    p2 = puz.read('testfiles/washpost.puz')
+    p2.title = ''
+    p2.author = ''
+    html2 = puz_viewer.render_html(p2)
+    assert p.title not in html2
+    assert p.author not in html2
+
+
+def test_viewer_cli(capsys: pytest.CaptureFixture[str]) -> None:
+    outfile = temp_filename('html')
+    try:
+        sys.argv = ['puz_viewer.py', 'testfiles/washpost.puz']
+        puz_viewer.main()
+        captured = capsys.readouterr()
+        assert '<!DOCTYPE html>' in captured.out
+
+        sys.argv = ['puz_viewer.py', 'testfiles/washpost.puz', '-o', outfile]
+        puz_viewer.main()
+        with open(outfile, encoding='utf-8') as f:
+            assert '<!DOCTYPE html>' in f.read()
+    finally:
+        if os.path.exists(outfile):
+            os.unlink(outfile)
+
+
+def test_viewer_detect_format() -> None:
+    with open('testfiles/washpost.puz', 'rb') as f:
+        assert puz_viewer._detect_format(f.read()) == 'puz'
+    with open('testfiles/text_format_v1.txt', 'rb') as f:
+        assert puz_viewer._detect_format(f.read()) == 'txt'
+
+
+def test_viewer_format_flag(capsys: pytest.CaptureFixture[str]) -> None:
+    sys.argv = ['puz_viewer.py', '-f', 'puz', 'testfiles/washpost.puz']
+    puz_viewer.main()
+    assert '<!DOCTYPE html>' in capsys.readouterr().out
+
+    sys.argv = ['puz_viewer.py', '-f', 'txt', 'testfiles/text_format_v1.txt']
+    puz_viewer.main()
+    assert '<!DOCTYPE html>' in capsys.readouterr().out
+
+
+def test_viewer_stdin(
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import io
+    with open('testfiles/washpost.puz', 'rb') as f:
+        data = f.read()
+
+    class FakeStdin:
+        def __init__(self) -> None:
+            self.buffer = io.BytesIO(data)
+
+    monkeypatch.setattr(sys, 'stdin', FakeStdin())
+    sys.argv = ['puz_viewer.py', '-']
+    puz_viewer.main()
+    assert '<!DOCTYPE html>' in capsys.readouterr().out
+
+    monkeypatch.setattr(sys, 'stdin', FakeStdin())
+    sys.argv = ['puz_viewer.py']
+    puz_viewer.main()
+    assert '<!DOCTYPE html>' in capsys.readouterr().out
