@@ -37,11 +37,11 @@ clues = p.clue_numbering()
 
 print('Across')
 for clue in clues.across:
-    print(clue.number, clue.text, '-', clue.solution)
+    print(f'{clue.number}. {clue.text} - {clue.solution}')
 
 print('Down')
 for clue in clues.down:
-    print(clue.number, clue.text, '-', clue.solution)
+    print(f'{clue.number}. {clue.text} - {clue.solution}')
 
 #
 # Print the puzzle grid
@@ -68,7 +68,7 @@ p.save('example.puz')
 # New! Convert from Across Lite text format to .puz:
 #
 p2 = puz.read_text('testfiles/text_format_v1.txt')
-p2.save('example2.puz')
+p2.save('example.puz')
 ```
 ## Notes
 
