@@ -6,7 +6,6 @@ import sys
 from typing import Any
 
 import puz
-from puz import is_blacksquare
 
 # Generated from viewer_template.html — do not edit directly.
 # Run `make template` (or `python sync_template.py --write`) to update.
@@ -424,7 +423,7 @@ def _puzzle_data(puzzle: puz.Puzzle) -> dict[str, Any]:
         }
         if diagramless:
             cell['type'] = 'white'
-        elif is_blacksquare(ch):
+        elif puz.is_blacksquare(ch):
             cell['type'] = 'black'
         else:
             cell['type'] = 'white'

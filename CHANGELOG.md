@@ -1,16 +1,6 @@
 # Changelog
 
 ## 0.6.0 (Mar 24, 2026)
-
-New: Standalone HTML Crossword Viewer
-
-puz_viewer renders .puz or .txt puzzle files as print-ready, self-contained HTML pages — no dependencies beyond puzpy.
-
-python -m puz_viewer puzzle.puz -o puzzle.html
-python -m puz_viewer *.puz --outdir gallery/ --index
-
-Supports single-file and batch mode with an auto-generated index page.
-
 Improved API for Clues and Grid
 
 ClueEntry now has named properties for cleaner, more discoverable access:
