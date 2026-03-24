@@ -1,4 +1,4 @@
-.PHONY: test lint coverage dist pypi testpypi
+.PHONY: test lint coverage dist pypi testpypi template
 
 test:
 	pytest
@@ -17,3 +17,6 @@ pypi: dist
 
 testpypi: dist
 	python -m twine upload --repository testpypi dist/*
+
+template:
+	python sync_template.py --write

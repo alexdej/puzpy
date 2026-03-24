@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Crossword Viewer</title>
+<style>
+@page { size: letter; margin: 0.5in; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Times New Roman', Georgia, serif;
+  background: white;
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 0.25in;
+  min-width: 7.5in;
+  overflow: auto;
+}
+@media print {
+  body { padding: 0; display: block; min-width: 0; overflow: visible; }
+}
+.page {
+  width: 7.5in; height: 10in; background: white;
+  min-width: 7.5in; min-height: 10in;
+  max-width: 7.5in; max-height: 10in;
+  padding: 0;
+  display: flex; flex-direction: column; overflow: hidden;
+  flex-shrink: 0;
+}
+.puzzle-title {
+  font-size: 14pt; font-weight: bold; margin-bottom: 4px; line-height: 1.2;
+}
+.title-rule { border: none; border-top: 1.5px solid #000; margin-bottom: 6px; }
+.content-area { flex: 1; position: relative; overflow: hidden; }
+.grid-wrap { position: absolute; top: 0; }
+.grid-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-right: 2px solid #000;
+  border-bottom: 2px solid #000;
+  border-top: none;
+  border-left: none;
+}
+.grid-table td {
+  border-top: 2px solid #000;
+  border-left: 2px solid #000;
+  border-right: none;
+  border-bottom: none;
+  position: relative; vertical-align: top; padding: 0;
+}
+.grid-table td.black {
+  background: #000;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.clue-col { position: absolute; overflow: hidden; }
+.clue-section-header {
+  font-weight: bold; margin-bottom: 0; break-after: avoid;
+}
+.clue-section-header.down-header { margin-top: 12px; }
+.clue-item { margin-bottom: 0; }
+.clue-number { font-weight: bold; display: inline-block; text-align: right; }
+.footer-rule { border: none; border-top: 1px solid #000; margin-bottom: 4px; }
+.footer {
+  display: flex; justify-content: space-between;
+  align-items: baseline; font-size: 8pt;
+}
+.footer-copyright { font-size: 7.5pt; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="puzzle-title" id="title"></div>
+  <hr class="title-rule">
+  <div class="content-area" id="content">
+    <div class="grid-wrap" id="gridWrap">
+      <table class="grid-table" id="grid"></table>
+    </div>
+  </div>
+  <hr class="footer-rule">
+  <div class="footer">
+    <span id="author"></span>
+    <span class="footer-copyright" id="copyright"></span>
+  </div>
+</div>
+<script>
+const PUZZLE = {"title": "December 6, 2005 - \"Split Pea Soup\"", "author": "By Raymond Hamel", "copyright": "© 2005 Raymond Hamel.  Distributed by CrosSynergy(TM) Syndicate", "width": 15, "height": 15, "grid": [{"index": 0, "row": 0, "col": 0, "type": "white", "number": 1}, {"index": 1, "row": 0, "col": 1, "type": "white", "number": 2}, {"index": 2, "row": 0, "col": 2, "type": "white", "number": 3}, {"index": 3, "row": 0, "col": 3, "type": "white", "number": 4}, {"index": 4, "row": 0, "col": 4, "type": "black"}, {"index": 5, "row": 0, "col": 5, "type": "white", "number": 5}, {"index": 6, "row": 0, "col": 6, "type": "white", "number": 6}, {"index": 7, "row": 0, "col": 7, "type": "white", "number": 7}, {"index": 8, "row": 0, "col": 8, "type": "white", "number": 8}, {"index": 9, "row": 0, "col": 9, "type": "black"}, {"index": 10, "row": 0, "col": 10, "type": "white", "number": 9}, {"index": 11, "row": 0, "col": 11, "type": "white", "number": 10}, {"index": 12, "row": 0, "col": 12, "type": "white", "number": 11}, {"index": 13, "row": 0, "col": 13, "type": "white", "number": 12}, {"index": 14, "row": 0, "col": 14, "type": "white", "number": 13}, {"index": 15, "row": 1, "col": 0, "type": "white", "number": 14}, {"index": 16, "row": 1, "col": 1, "type": "white"}, {"index": 17, "row": 1, "col": 2, "type": "white"}, {"index": 18, "row": 1, "col": 3, "type": "white"}, {"index": 19, "row": 1, "col": 4, "type": "black"}, {"index": 20, "row": 1, "col": 5, "type": "white", "number": 15}, {"index": 21, "row": 1, "col": 6, "type": "white"}, {"index": 22, "row": 1, "col": 7, "type": "white"}, {"index": 23, "row": 1, "col": 8, "type": "white"}, {"index": 24, "row": 1, "col": 9, "type": "black"}, {"index": 25, "row": 1, "col": 10, "type": "white", "number": 16}, {"index": 26, "row": 1, "col": 11, "type": "white"}, {"index": 27, "row": 1, "col": 12, "type": "white"}, {"index": 28, "row": 1, "col": 13, "type": "white"}, {"index": 29, "row": 1, "col": 14, "type": "white"}, {"index": 30, "row": 2, "col": 0, "type": "white", "number": 17}, {"index": 31, "row": 2, "col": 1, "type": "white"}, {"index": 32, "row": 2, "col": 2, "type": "white"}, {"index": 33, "row": 2, "col": 3, "type": "white"}, {"index": 34, "row": 2, "col": 4, "type": "white", "number": 18}, {"index": 35, "row": 2, "col": 5, "type": "white"}, {"index": 36, "row": 2, "col": 6, "type": "white"}, {"index": 37, "row": 2, "col": 7, "type": "white"}, {"index": 38, "row": 2, "col": 8, "type": "white"}, {"index": 39, "row": 2, "col": 9, "type": "black"}, {"index": 40, "row": 2, "col": 10, "type": "white", "number": 19}, {"index": 41, "row": 2, "col": 11, "type": "white"}, {"index": 42, "row": 2, "col": 12, "type": "white"}, {"index": 43, "row": 2, "col": 13, "type": "white"}, {"index": 44, "row": 2, "col": 14, "type": "white"}, {"index": 45, "row": 3, "col": 0, "type": "white", "number": 20}, {"index": 46, "row": 3, "col": 1, "type": "white"}, {"index": 47, "row": 3, "col": 2, "type": "white"}, {"index": 48, "row": 3, "col": 3, "type": "white"}, {"index": 49, "row": 3, "col": 4, "type": "white"}, {"index": 50, "row": 3, "col": 5, "type": "white"}, {"index": 51, "row": 3, "col": 6, "type": "white"}, {"index": 52, "row": 3, "col": 7, "type": "white"}, {"index": 53, "row": 3, "col": 8, "type": "white"}, {"index": 54, "row": 3, "col": 9, "type": "white", "number": 21}, {"index": 55, "row": 3, "col": 10, "type": "white"}, {"index": 56, "row": 3, "col": 11, "type": "white"}, {"index": 57, "row": 3, "col": 12, "type": "black"}, {"index": 58, "row": 3, "col": 13, "type": "black"}, {"index": 59, "row": 3, "col": 14, "type": "black"}, {"index": 60, "row": 4, "col": 0, "type": "black"}, {"index": 61, "row": 4, "col": 1, "type": "black"}, {"index": 62, "row": 4, "col": 2, "type": "black"}, {"index": 63, "row": 4, "col": 3, "type": "white", "number": 22}, {"index": 64, "row": 4, "col": 4, "type": "white"}, {"index": 65, "row": 4, "col": 5, "type": "white"}, {"index": 66, "row": 4, "col": 6, "type": "black"}, {"index": 67, "row": 4, "col": 7, "type": "white", "number": 23}, {"index": 68, "row": 4, "col": 8, "type": "white"}, {"index": 69, "row": 4, "col": 9, "type": "white"}, {"index": 70, "row": 4, "col": 10, "type": "white"}, {"index": 71, "row": 4, "col": 11, "type": "black"}, {"index": 72, "row": 4, "col": 12, "type": "white", "number": 24}, {"index": 73, "row": 4, "col": 13, "type": "white", "number": 25}, {"index": 74, "row": 4, "col": 14, "type": "white", "number": 26}, {"index": 75, "row": 5, "col": 0, "type": "white", "number": 27}, {"index": 76, "row": 5, "col": 1, "type": "white", "number": 28}, {"index": 77, "row": 5, "col": 2, "type": "white", "number": 29}, {"index": 78, "row": 5, "col": 3, "type": "black"}, {"index": 79, "row": 5, "col": 4, "type": "white", "number": 30}, {"index": 80, "row": 5, "col": 5, "type": "white"}, {"index": 81, "row": 5, "col": 6, "type": "white", "number": 31}, {"index": 82, "row": 5, "col": 7, "type": "black"}, {"index": 83, "row": 5, "col": 8, "type": "black"}, {"index": 84, "row": 5, "col": 9, "type": "white", "number": 32}, {"index": 85, "row": 5, "col": 10, "type": "white"}, {"index": 86, "row": 5, "col": 11, "type": "white", "number": 33}, {"index": 87, "row": 5, "col": 12, "type": "white"}, {"index": 88, "row": 5, "col": 13, "type": "white"}, {"index": 89, "row": 5, "col": 14, "type": "white"}, {"index": 90, "row": 6, "col": 0, "type": "white", "number": 34}, {"index": 91, "row": 6, "col": 1, "type": "white"}, {"index": 92, "row": 6, "col": 2, "type": "white"}, {"index": 93, "row": 6, "col": 3, "type": "white", "number": 35}, {"index": 94, "row": 6, "col": 4, "type": "black"}, {"index": 95, "row": 6, "col": 5, "type": "white", "number": 36}, {"index": 96, "row": 6, "col": 6, "type": "white"}, {"index": 97, "row": 6, "col": 7, "type": "white", "number": 37}, {"index": 98, "row": 6, "col": 8, "type": "white", "number": 38}, {"index": 99, "row": 6, "col": 9, "type": "black"}, {"index": 100, "row": 6, "col": 10, "type": "white", "number": 39}, {"index": 101, "row": 6, "col": 11, "type": "white"}, {"index": 102, "row": 6, "col": 12, "type": "white"}, {"index": 103, "row": 6, "col": 13, "type": "white"}, {"index": 104, "row": 6, "col": 14, "type": "white"}, {"index": 105, "row": 7, "col": 0, "type": "white", "number": 40}, {"index": 106, "row": 7, "col": 1, "type": "white"}, {"index": 107, "row": 7, "col": 2, "type": "white"}, {"index": 108, "row": 7, "col": 3, "type": "white"}, {"index": 109, "row": 7, "col": 4, "type": "white", "number": 41}, {"index": 110, "row": 7, "col": 5, "type": "white"}, {"index": 111, "row": 7, "col": 6, "type": "white"}, {"index": 112, "row": 7, "col": 7, "type": "white"}, {"index": 113, "row": 7, "col": 8, "type": "white"}, {"index": 114, "row": 7, "col": 9, "type": "white", "number": 42}, {"index": 115, "row": 7, "col": 10, "type": "white"}, {"index": 116, "row": 7, "col": 11, "type": "white"}, {"index": 117, "row": 7, "col": 12, "type": "white"}, {"index": 118, "row": 7, "col": 13, "type": "white"}, {"index": 119, "row": 7, "col": 14, "type": "white"}, {"index": 120, "row": 8, "col": 0, "type": "white", "number": 43}, {"index": 121, "row": 8, "col": 1, "type": "white"}, {"index": 122, "row": 8, "col": 2, "type": "white"}, {"index": 123, "row": 8, "col": 3, "type": "white"}, {"index": 124, "row": 8, "col": 4, "type": "white"}, {"index": 125, "row": 8, "col": 5, "type": "black"}, {"index": 126, "row": 8, "col": 6, "type": "white", "number": 44}, {"index": 127, "row": 8, "col": 7, "type": "white"}, {"index": 128, "row": 8, "col": 8, "type": "white"}, {"index": 129, "row": 8, "col": 9, "type": "white"}, {"index": 130, "row": 8, "col": 10, "type": "black"}, {"index": 131, "row": 8, "col": 11, "type": "white", "number": 45}, {"index": 132, "row": 8, "col": 12, "type": "white"}, {"index": 133, "row": 8, "col": 13, "type": "white"}, {"index": 134, "row": 8, "col": 14, "type": "white"}, {"index": 135, "row": 9, "col": 0, "type": "white", "number": 46}, {"index": 136, "row": 9, "col": 1, "type": "white"}, {"index": 137, "row": 9, "col": 2, "type": "white"}, {"index": 138, "row": 9, "col": 3, "type": "white"}, {"index": 139, "row": 9, "col": 4, "type": "white"}, {"index": 140, "row": 9, "col": 5, "type": "white", "number": 47}, {"index": 141, "row": 9, "col": 6, "type": "black"}, {"index": 142, "row": 9, "col": 7, "type": "black"}, {"index": 143, "row": 9, "col": 8, "type": "white", "number": 48}, {"index": 144, "row": 9, "col": 9, "type": "white"}, {"index": 145, "row": 9, "col": 10, "type": "white", "number": 49}, {"index": 146, "row": 9, "col": 11, "type": "black"}, {"index": 147, "row": 9, "col": 12, "type": "white", "number": 50}, {"index": 148, "row": 9, "col": 13, "type": "white"}, {"index": 149, "row": 9, "col": 14, "type": "white"}, {"index": 150, "row": 10, "col": 0, "type": "white", "number": 51}, {"index": 151, "row": 10, "col": 1, "type": "white"}, {"index": 152, "row": 10, "col": 2, "type": "white"}, {"index": 153, "row": 10, "col": 3, "type": "black"}, {"index": 154, "row": 10, "col": 4, "type": "white", "number": 52}, {"index": 155, "row": 10, "col": 5, "type": "white"}, {"index": 156, "row": 10, "col": 6, "type": "white", "number": 53}, {"index": 157, "row": 10, "col": 7, "type": "white", "number": 54}, {"index": 158, "row": 10, "col": 8, "type": "black"}, {"index": 159, "row": 10, "col": 9, "type": "white", "number": 55}, {"index": 160, "row": 10, "col": 10, "type": "white"}, {"index": 161, "row": 10, "col": 11, "type": "white", "number": 56}, {"index": 162, "row": 10, "col": 12, "type": "black"}, {"index": 163, "row": 10, "col": 13, "type": "black"}, {"index": 164, "row": 10, "col": 14, "type": "black"}, {"index": 165, "row": 11, "col": 0, "type": "black"}, {"index": 166, "row": 11, "col": 1, "type": "black"}, {"index": 167, "row": 11, "col": 2, "type": "black"}, {"index": 168, "row": 11, "col": 3, "type": "white", "number": 57}, {"index": 169, "row": 11, "col": 4, "type": "white"}, {"index": 170, "row": 11, "col": 5, "type": "white"}, {"index": 171, "row": 11, "col": 6, "type": "white"}, {"index": 172, "row": 11, "col": 7, "type": "white"}, {"index": 173, "row": 11, "col": 8, "type": "white", "number": 58}, {"index": 174, "row": 11, "col": 9, "type": "white"}, {"index": 175, "row": 11, "col": 10, "type": "white"}, {"index": 176, "row": 11, "col": 11, "type": "white"}, {"index": 177, "row": 11, "col": 12, "type": "white", "number": 59}, {"index": 178, "row": 11, "col": 13, "type": "white", "number": 60}, {"index": 179, "row": 11, "col": 14, "type": "white", "number": 61}, {"index": 180, "row": 12, "col": 0, "type": "white", "number": 62}, {"index": 181, "row": 12, "col": 1, "type": "white", "number": 63}, {"index": 182, "row": 12, "col": 2, "type": "white", "number": 64}, {"index": 183, "row": 12, "col": 3, "type": "white"}, {"index": 184, "row": 12, "col": 4, "type": "white"}, {"index": 185, "row": 12, "col": 5, "type": "black"}, {"index": 186, "row": 12, "col": 6, "type": "white", "number": 65}, {"index": 187, "row": 12, "col": 7, "type": "white"}, {"index": 188, "row": 12, "col": 8, "type": "white"}, {"index": 189, "row": 12, "col": 9, "type": "white"}, {"index": 190, "row": 12, "col": 10, "type": "white"}, {"index": 191, "row": 12, "col": 11, "type": "white"}, {"index": 192, "row": 12, "col": 12, "type": "white"}, {"index": 193, "row": 12, "col": 13, "type": "white"}, {"index": 194, "row": 12, "col": 14, "type": "white"}, {"index": 195, "row": 13, "col": 0, "type": "white", "number": 66}, {"index": 196, "row": 13, "col": 1, "type": "white"}, {"index": 197, "row": 13, "col": 2, "type": "white"}, {"index": 198, "row": 13, "col": 3, "type": "white"}, {"index": 199, "row": 13, "col": 4, "type": "white"}, {"index": 200, "row": 13, "col": 5, "type": "black"}, {"index": 201, "row": 13, "col": 6, "type": "white", "number": 67}, {"index": 202, "row": 13, "col": 7, "type": "white"}, {"index": 203, "row": 13, "col": 8, "type": "white"}, {"index": 204, "row": 13, "col": 9, "type": "white"}, {"index": 205, "row": 13, "col": 10, "type": "black"}, {"index": 206, "row": 13, "col": 11, "type": "white", "number": 68}, {"index": 207, "row": 13, "col": 12, "type": "white"}, {"index": 208, "row": 13, "col": 13, "type": "white"}, {"index": 209, "row": 13, "col": 14, "type": "white"}, {"index": 210, "row": 14, "col": 0, "type": "white", "number": 69}, {"index": 211, "row": 14, "col": 1, "type": "white"}, {"index": 212, "row": 14, "col": 2, "type": "white"}, {"index": 213, "row": 14, "col": 3, "type": "white"}, {"index": 214, "row": 14, "col": 4, "type": "white"}, {"index": 215, "row": 14, "col": 5, "type": "black"}, {"index": 216, "row": 14, "col": 6, "type": "white", "number": 70}, {"index": 217, "row": 14, "col": 7, "type": "white"}, {"index": 218, "row": 14, "col": 8, "type": "white"}, {"index": 219, "row": 14, "col": 9, "type": "white"}, {"index": 220, "row": 14, "col": 10, "type": "black"}, {"index": 221, "row": 14, "col": 11, "type": "white", "number": 71}, {"index": 222, "row": 14, "col": 12, "type": "white"}, {"index": 223, "row": 14, "col": 13, "type": "white"}, {"index": 224, "row": 14, "col": 14, "type": "white"}], "clues": {"across": [{"number": 1, "text": "Mary's pet"}, {"number": 5, "text": "Disagreement"}, {"number": 9, "text": "Cut, as a turkey"}, {"number": 14, "text": "Kind of history"}, {"number": 15, "text": "On the sheltered side"}, {"number": 16, "text": "Theater awards"}, {"number": 17, "text": "Outburst of controversy"}, {"number": 19, "text": "Cite"}, {"number": 20, "text": "Aim for"}, {"number": 22, "text": "JPEG file, often"}, {"number": 23, "text": "Rebuke to a backstabber"}, {"number": 24, "text": "Tanning lotion tube letters"}, {"number": 27, "text": "Graduate prog. award"}, {"number": 30, "text": "Old Microsoft product"}, {"number": 32, "text": "On-line game character"}, {"number": 34, "text": "Regrets"}, {"number": 36, "text": "Chess corner piece"}, {"number": 39, "text": "Shiraz citizen"}, {"number": 40, "text": "Go unnoticed"}, {"number": 43, "text": "Get rid of"}, {"number": 44, "text": "Haiku, for one"}, {"number": 45, "text": "Warm and cozy"}, {"number": 46, "text": "Signal receivers"}, {"number": 48, "text": "\"All the way with ___\" (political slogan)"}, {"number": 50, "text": "___ Anne de Beaupré"}, {"number": 51, "text": "Choose"}, {"number": 52, "text": "Insulation material"}, {"number": 55, "text": "Shocking swimmer"}, {"number": 57, "text": "Current sitcom set in Cleveland"}, {"number": 62, "text": "Very important"}, {"number": 65, "text": "Direction giver"}, {"number": 66, "text": "\"There's no such thing as a free lunch,\" e.g."}, {"number": 67, "text": "On strike"}, {"number": 68, "text": "Police team"}, {"number": 69, "text": "Office aides"}, {"number": 70, "text": "Bit of bird chow"}, {"number": 71, "text": "Holliday's marshal friend"}], "down": [{"number": 1, "text": "Hit high in the air"}, {"number": 2, "text": "Caruso solo"}, {"number": 3, "text": "Simplified signature"}, {"number": 4, "text": "Censor"}, {"number": 5, "text": "College admission factor"}, {"number": 6, "text": "Tractor attachment"}, {"number": 7, "text": "Eagle's nest"}, {"number": 8, "text": "Entice"}, {"number": 9, "text": "French chicken dish"}, {"number": 10, "text": "Touch"}, {"number": 11, "text": "1983 Duran Duran hit"}, {"number": 12, "text": "Doggy doc"}, {"number": 13, "text": "Jargon suffix"}, {"number": 18, "text": "Spoken"}, {"number": 21, "text": "LAX listing"}, {"number": 24, "text": "Soiled spots"}, {"number": 25, "text": "Succeed"}, {"number": 26, "text": "Green edge"}, {"number": 27, "text": "Magic word"}, {"number": 28, "text": "Keep quiet"}, {"number": 29, "text": "Draw off sherry"}, {"number": 31, "text": "Word before bubble or opera"}, {"number": 33, "text": "Part of NEA"}, {"number": 35, "text": "Drink with sushi"}, {"number": 37, "text": "Ally of the Missouri"}, {"number": 38, "text": "Record company name now licensed to an on-line pharmaceutical company"}, {"number": 41, "text": "Sings and dances"}, {"number": 42, "text": "Like some wartime journalists"}, {"number": 47, "text": "Make soaking wet"}, {"number": 49, "text": "Boss, usually following \"El\""}, {"number": 53, "text": "Protection"}, {"number": 54, "text": "Bea Arthur sitcom"}, {"number": 56, "text": "Fall into disuse"}, {"number": 57, "text": "NBA target"}, {"number": 58, "text": "West ___ virus"}, {"number": 59, "text": "Big Ten school"}, {"number": 60, "text": "Lenin foe"}, {"number": 61, "text": "URL starter"}, {"number": 62, "text": "Exercise accessory"}, {"number": 63, "text": "Paul Bunyan's tool"}, {"number": 64, "text": "Former NFL quarterback Kelly or Harbaugh"}]}};
+const S = (() => {
+  const n = Math.max(PUZZLE.width, PUZZLE.height);
+  const pageW = 720;
+  const isSmall = n <= 10;
+  const isLarge = n > 15;
+  const cellSize = isSmall ? Math.min(32, Math.floor(pageW * 0.35 / n))
+    : Math.min(26, Math.floor(pageW * 0.58 / n));
+  return {
+    cellSize,
+    isSmall,
+    isLarge,
+    cellNumFont: cellSize >= 30 ? '8pt' : cellSize >= 24 ? '6.3pt' : '5.5pt',
+    cellNumLeft: cellSize >= 30 ? '2px' : cellSize >= 24 ? '2px' : '1px',
+    cellNumTop: cellSize >= 30 ? '1.5px' : cellSize >= 24 ? '1px' : '0.5px',
+    numLeftCols: isSmall ? 1 : isLarge ? 3 : 2,
+    numRightCols: isSmall ? 2 : isLarge ? 4 : 2,
+    colGap: isLarge ? 10 : 14,
+    gridGapX: isLarge ? 12 : 16,
+    gridGapY: isSmall ? 16 : isLarge ? 8 : 10,
+    clueFontSize: isSmall ? '11pt' : isLarge ? '9pt' : '10.5pt',
+    clueLineHeight: isSmall ? '1.35' : isLarge ? '1.25' : '1.3',
+    headerFontSize: isSmall ? '12pt' : isLarge ? '9.5pt' : '11pt',
+    numWidth: '17px',
+    numMargin: '3px',
+    clueIndent: '20px'
+  };
+})();
+
+document.head.insertAdjacentHTML('beforeend', `<style>
+  .grid-table td { width: ${S.cellSize}px; height: ${S.cellSize}px; }
+  .cell-number {
+    position: absolute; top: ${S.cellNumTop}; left: ${S.cellNumLeft};
+    font-size: ${S.cellNumFont}; line-height: 1;
+  }
+  .clue-col { font-size: ${S.clueFontSize}; line-height: ${S.clueLineHeight}; }
+  .clue-section-header {
+    font-size: ${S.headerFontSize}; padding-left: ${S.clueIndent};
+  }
+  .clue-item { padding-left: ${S.clueIndent}; text-indent: -${S.clueIndent}; }
+  .clue-number { width: ${S.numWidth}; margin-right: ${S.numMargin}; }
+</style>`);
+
+function buildGrid() {
+  const table = document.getElementById('grid');
+  const { width, height, grid } = PUZZLE;
+  const lookup = {};
+  grid.forEach(c => { lookup[c.row + ',' + c.col] = c; });
+  for (let r = 0; r < height; r++) {
+    const tr = document.createElement('tr');
+    for (let c = 0; c < width; c++) {
+      const cell = lookup[r + ',' + c];
+      const td = document.createElement('td');
+      if (!cell || cell.type === 'black') {
+        td.className = 'black';
+      } else if (cell.number) {
+        const span = document.createElement('span');
+        span.className = 'cell-number';
+        span.textContent = cell.number;
+        td.appendChild(span);
+      }
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+}
+
+function buildClueElements() {
+  const items = [];
+  const acrossH = document.createElement('div');
+  acrossH.className = 'clue-section-header';
+  acrossH.textContent = 'ACROSS';
+  items.push(acrossH);
+  PUZZLE.clues.across.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'clue-item';
+    div.innerHTML =
+      '<span class="clue-number">' + c.number + '</span> ' + c.text;
+    items.push(div);
+  });
+  const downH = document.createElement('div');
+  downH.className = 'clue-section-header down-header';
+  downH.textContent = 'DOWN';
+  items.push(downH);
+  PUZZLE.clues.down.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'clue-item';
+    div.innerHTML =
+      '<span class="clue-number">' + c.number + '</span> ' + c.text;
+    items.push(div);
+  });
+  return items;
+}
+
+function tryLayout(bottomY, H, colGeom, items, content) {
+  content.querySelectorAll('.clue-col').forEach(el => el.remove());
+
+  // Reset margins from any previous justification pass
+  items.forEach(item => { item.style.marginBottom = ''; });
+
+  const colDivs = colGeom.map(c => {
+    const top = c.isLeft ? 0 : c.y;
+    const h = c.isLeft ? bottomY : (bottomY - c.y);
+    const div = document.createElement('div');
+    div.className = 'clue-col';
+    div.style.left = c.x + 'px';
+    div.style.top = top + 'px';
+    div.style.width = c.w + 'px';
+    div.style.height = h + 'px';
+    content.appendChild(div);
+    return { div, maxH: h };
+  });
+
+  let colIdx = 0;
+  for (let idx = 0; idx < items.length; idx++) {
+    const item = items[idx];
+    if (colIdx >= colDivs.length) {
+      colDivs[colDivs.length - 1].div.appendChild(item);
+      continue;
+    }
+    const col = colDivs[colIdx];
+    col.div.appendChild(item);
+    if (col.div.scrollHeight > col.maxH) {
+      col.div.removeChild(item);
+      colIdx++;
+      if (colIdx >= colDivs.length) {
+        colDivs[colDivs.length - 1].div.appendChild(item);
+      } else {
+        colDivs[colIdx].div.appendChild(item);
+      }
+    } else if (item.classList.contains('clue-section-header') && idx + 1 < items.length) {
+      // Header fits, but check if at least one clue fits after it
+      const nextItem = items[idx + 1];
+      col.div.appendChild(nextItem);
+      if (col.div.scrollHeight > col.maxH) {
+        // Won't fit — move header to next column
+        col.div.removeChild(nextItem);
+        col.div.removeChild(item);
+        colIdx++;
+        if (colIdx >= colDivs.length) {
+          colDivs[colDivs.length - 1].div.appendChild(item);
+          colDivs[colDivs.length - 1].div.appendChild(nextItem);
+        } else {
+          colDivs[colIdx].div.appendChild(item);
+          colDivs[colIdx].div.appendChild(nextItem);
+        }
+        idx++;  // skip next item, already placed
+      } else {
+        // Both fit — remove nextItem, let the loop place it normally
+        col.div.removeChild(nextItem);
+      }
+    }
+  }
+
+  const lastCol = colDivs[colDivs.length - 1];
+  return colDivs.every(c => c.div.scrollHeight <= c.maxH);
+}
+
+function layoutClues() {
+  const content = document.getElementById('content');
+  const gridWrap = document.getElementById('gridWrap');
+
+  const W = content.offsetWidth;
+  const H = content.offsetHeight;
+  const gW = gridWrap.offsetWidth;
+  const gH = gridWrap.offsetHeight;
+
+  // Cap: never wider than what a 15x15 two-column layout produces (~160px)
+  const maxColW = 160;
+  const naturalLeftColW = (W - gW - S.gridGapX - (S.numLeftCols - 1) * S.colGap) / S.numLeftCols;
+  const leftColW = Math.min(maxColW, naturalLeftColW);
+  const rightColTop = gH + S.gridGapY;
+  const rightColW = (gW - (S.numRightCols - 1) * S.colGap) / S.numRightCols;
+
+  // Build geometry relative to x=0: left cols, then grid, then right cols under grid
+  const leftColsTotalW = S.numLeftCols * leftColW + (S.numLeftCols - 1) * S.colGap;
+  const gridLeft = leftColsTotalW + S.gridGapX;
+  const blockW = gridLeft + gW;
+
+  const colGeom = [];
+  for (let i = 0; i < S.numLeftCols; i++) {
+    colGeom.push({
+      x: i * (leftColW + S.colGap),
+      y: 0,
+      w: leftColW,
+      isLeft: true
+    });
+  }
+  for (let i = 0; i < S.numRightCols; i++) {
+    colGeom.push({
+      x: gridLeft + i * (rightColW + S.colGap),
+      y: rightColTop,
+      w: rightColW,
+      isLeft: false
+    });
+  }
+
+  const items = buildClueElements();
+
+  // Try left-only layout: skip the L-shape if clues fit next to the grid
+  let usedLeftOnly = false;
+  const leftOnlyMaxH = Math.ceil(gH * 1.25);
+  if (leftOnlyMaxH < H) {
+    const leftOnlyGeom = colGeom.filter(c => c.isLeft);
+    if (tryLayout(leftOnlyMaxH, leftOnlyMaxH, leftOnlyGeom, items, content)) {
+      usedLeftOnly = true;
+    }
+  }
+
+  if (!usedLeftOnly) {
+    // L-shaped layout — binary search for balanced bottomY
+    let lo = Math.ceil(rightColTop + 60);
+    let hi = H;
+    let bestY = H;
+
+    for (let i = 0; i < 25; i++) {
+      const mid = Math.floor((lo + hi) / 2);
+      const fits = tryLayout(mid, H, colGeom, items, content);
+      if (fits) {
+        bestY = mid;
+        hi = mid;
+      } else {
+        lo = mid + 1;
+      }
+    }
+
+    let finalY = Math.min(bestY + 5, H);
+    for (let attempt = 0; attempt < 10; attempt++) {
+      tryLayout(finalY, H, colGeom, items, content);
+      const cols = content.querySelectorAll('.clue-col');
+      let maxOverflow = 0;
+      cols.forEach(c => {
+        const ov = c.scrollHeight - c.clientHeight;
+        if (ov > maxOverflow) maxOverflow = ov;
+      });
+      if (maxOverflow <= 0) break;
+      finalY = Math.min(finalY + maxOverflow + 2, H);
+    }
+  }
+
+  // Rebalance columns
+  const allCols = content.querySelectorAll('.clue-col');
+  const colArr = Array.from(allCols);
+
+  function getSlackPerGap(col) {
+    const kids = Array.from(col.children);
+    if (kids.length < 2) return 9999;
+    let contentH = 0;
+    kids.forEach(k => { contentH += k.offsetHeight; });
+    const slack = col.clientHeight - contentH;
+    return slack / (kids.length - 1);
+  }
+
+  for (let pass = 0; pass < 20; pass++) {
+    let moved = false;
+    for (let i = colArr.length - 2; i >= 0; i--) {
+      const curr = colArr[i];
+      const next = colArr[i + 1];
+      if (curr.children.length < 3) continue;
+      const currSpg = getSlackPerGap(curr);
+      const nextSpg = getSlackPerGap(next);
+      if (nextSpg < currSpg * 1.5) continue;
+      const item = curr.lastChild;
+      curr.removeChild(item);
+      next.insertBefore(item, next.firstChild);
+      if (next.scrollHeight > next.clientHeight) {
+        next.removeChild(item);
+        curr.appendChild(item);
+      } else {
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+
+  // Vertically justify using flexbox space-between (skip for left-only layout)
+  if (!usedLeftOnly) {
+    colArr.forEach(col => {
+      col.style.display = 'flex';
+      col.style.flexDirection = 'column';
+      col.style.justifyContent = 'space-between';
+    });
+  }
+
+  // Center the entire block on the page
+  const offsetX = Math.max(0, (W - blockW) / 2);
+  gridWrap.style.left = (gridLeft + offsetX) + 'px';
+  colArr.forEach(col => {
+    col.style.left = (parseFloat(col.style.left) + offsetX) + 'px';
+  });
+}
+
+document.getElementById('title').textContent = PUZZLE.title;
+document.getElementById('author').textContent = PUZZLE.author;
+if (PUZZLE.copyright) {
+  document.getElementById('copyright').textContent = PUZZLE.copyright;
+}
+
+buildGrid();
+
+function doLayout() {
+  requestAnimationFrame(() => { requestAnimationFrame(layoutClues); });
+}
+doLayout();
+window.addEventListener('beforeprint', layoutClues);
+window.addEventListener('afterprint', layoutClues);
+</script>
+</body>
+</html>
