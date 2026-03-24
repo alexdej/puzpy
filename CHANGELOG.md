@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.6.0 (Mar 24, 2026)
+
+New: Standalone HTML Crossword Viewer
+
+puz_viewer renders .puz or .txt puzzle files as print-ready, self-contained HTML pages — no dependencies beyond puzpy.
+
+python -m puz_viewer puzzle.puz -o puzzle.html
+python -m puz_viewer *.puz --outdir gallery/ --index
+
+Supports single-file and batch mode with an auto-generated index page.
+
+Improved API for Clues and Grid
+
+ClueEntry now has named properties for cleaner, more discoverable access:
+
+clues = p.clue_numbering()
+for clue in clues.across:
+    print(f'{clue.number}. {clue.text} - {clue.solution}')
+
+New convenience methods on Puzzle:
+- p.grid() / p.solution_grid() — return a Grid directly
+- Grid is now iterable (rows by default), with .rows() and .cols() iterators
+
+Dict-style access (clue['num'], clue['clue']) continues to work for backwards compatibility.
+
+Better Debugging with __repr__
+
+All core objects (Puzzle, Grid, ClueNumbering, Rebus, Markup, Timer, PuzzleBuffer) now have informative __repr__ methods.
+
 ## 0.5.0 (Mar 20, 2026)
 
 - LTIM (timer) support, with new Timer class that exposes timer status and elapsed_seconds
