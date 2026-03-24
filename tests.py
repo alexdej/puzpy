@@ -1,4 +1,5 @@
 import os
+import pathlib
 import sys
 import tempfile
 import pytest
@@ -1076,3 +1077,25 @@ def test_viewer_stdin(
     sys.argv = ['puz_viewer.py']
     puz_viewer.main()
     assert '<!DOCTYPE html>' in capsys.readouterr().out
+
+
+def test_viewer_batch(tmp_path: pathlib.Path) -> None:
+    outdir = str(tmp_path / 'out')
+    sys.argv = [
+        'puz_viewer.py',
+        'testfiles/washpost.puz',
+        'testfiles/text_format_v1.txt',
+        'testfiles/ONE_bad.puz',
+        '--outdir', outdir, '--index',
+    ]
+    puz_viewer.main()
+    assert os.path.isfile(os.path.join(outdir, 'washpost.html'))
+    assert os.path.isfile(os.path.join(outdir, 'text_format_v1.html'))
+    assert not os.path.isfile(os.path.join(outdir, 'ONE_bad.html'))
+    index = os.path.join(outdir, 'index.html')
+    assert os.path.isfile(index)
+    with open(index, encoding='utf-8') as f:
+        content = f.read()
+    assert 'washpost.html' in content
+    assert 'text_format_v1.html' in content
+    assert 'ONE_bad.html' not in content

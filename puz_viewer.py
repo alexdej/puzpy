@@ -1,13 +1,23 @@
 import argparse
 import html as html_lib
 import json
+import os
 import sys
 from typing import Any
 
 import puz
 from puz import is_blacksquare
 
-_CSS = """\
+# Generated from viewer_template.html — do not edit directly.
+# Run `make template` (or `python sync_template.py --write`) to update.
+_TEMPLATE = """\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>__TITLE__</title>
+<style>
 @page { size: letter; margin: 0.5in; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -34,7 +44,7 @@ body {
 }
 .title-rule { border: none; border-top: 1.5px solid #000; margin-bottom: 6px; }
 .content-area { flex: 1; position: relative; overflow: hidden; }
-.grid-wrap { position: absolute; top: 0; right: 0; }
+.grid-wrap { position: absolute; top: 0; }
 .grid-table {
   border-collapse: separate;
   border-spacing: 0;
@@ -68,27 +78,47 @@ body {
   align-items: baseline; font-size: 8pt;
 }
 .footer-copyright { font-size: 7.5pt; }
-"""
-
-_JS = """\
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="puzzle-title" id="title"></div>
+  <hr class="title-rule">
+  <div class="content-area" id="content">
+    <div class="grid-wrap" id="gridWrap">
+      <table class="grid-table" id="grid"></table>
+    </div>
+  </div>
+  <hr class="footer-rule">
+  <div class="footer">
+    <span id="author"></span>
+    <span class="footer-copyright" id="copyright"></span>
+  </div>
+</div>
+<script>
+const PUZZLE = __PUZZLE_DATA__;
 const S = (() => {
   const n = Math.max(PUZZLE.width, PUZZLE.height);
   const pageW = 720;
-  const cellSize = Math.min(26, Math.floor(pageW * 0.58 / n));
+  const isSmall = n <= 10;
   const isLarge = n > 15;
+  const cellSize = isSmall ? Math.min(32, Math.floor(pageW * 0.35 / n))
+    : Math.min(26, Math.floor(pageW * 0.58 / n));
   return {
     cellSize,
-    cellNumFont: cellSize >= 24 ? '6.3pt' : '5.5pt',
-    cellNumLeft: cellSize >= 24 ? '2px' : '1px',
-    cellNumTop: cellSize >= 24 ? '1px' : '0.5px',
-    numLeftCols: isLarge ? 3 : 2,
-    numRightCols: isLarge ? 4 : 2,
+    isSmall,
+    isLarge,
+    cellNumFont: cellSize >= 30 ? '8pt' : cellSize >= 24 ? '6.3pt' : '5.5pt',
+    cellNumLeft: cellSize >= 30 ? '2px' : cellSize >= 24 ? '2px' : '1px',
+    cellNumTop: cellSize >= 30 ? '1.5px' : cellSize >= 24 ? '1px' : '0.5px',
+    numLeftCols: isSmall ? 1 : isLarge ? 3 : 2,
+    numRightCols: isSmall ? 2 : isLarge ? 4 : 2,
     colGap: isLarge ? 10 : 14,
     gridGapX: isLarge ? 12 : 16,
-    gridGapY: isLarge ? 8 : 10,
-    clueFontSize: isLarge ? '9pt' : '10.5pt',
-    clueLineHeight: isLarge ? '1.25' : '1.3',
-    headerFontSize: isLarge ? '9.5pt' : '11pt',
+    gridGapY: isSmall ? 16 : isLarge ? 8 : 10,
+    clueFontSize: isSmall ? '11pt' : isLarge ? '9pt' : '10.5pt',
+    clueLineHeight: isSmall ? '1.35' : isLarge ? '1.25' : '1.3',
+    headerFontSize: isSmall ? '12pt' : isLarge ? '9.5pt' : '11pt',
     numWidth: '17px',
     numMargin: '3px',
     clueIndent: '20px'
@@ -180,7 +210,8 @@ function tryLayout(bottomY, H, colGeom, items, content) {
   });
 
   let colIdx = 0;
-  for (const item of items) {
+  for (let idx = 0; idx < items.length; idx++) {
+    const item = items[idx];
     if (colIdx >= colDivs.length) {
       colDivs[colDivs.length - 1].div.appendChild(item);
       continue;
@@ -195,9 +226,31 @@ function tryLayout(bottomY, H, colGeom, items, content) {
       } else {
         colDivs[colIdx].div.appendChild(item);
       }
+    } else if (item.classList.contains('clue-section-header') && idx + 1 < items.length) {
+      // Header fits, but check if at least one clue fits after it
+      const nextItem = items[idx + 1];
+      col.div.appendChild(nextItem);
+      if (col.div.scrollHeight > col.maxH) {
+        // Won't fit — move header to next column
+        col.div.removeChild(nextItem);
+        col.div.removeChild(item);
+        colIdx++;
+        if (colIdx >= colDivs.length) {
+          colDivs[colDivs.length - 1].div.appendChild(item);
+          colDivs[colDivs.length - 1].div.appendChild(nextItem);
+        } else {
+          colDivs[colIdx].div.appendChild(item);
+          colDivs[colIdx].div.appendChild(nextItem);
+        }
+        idx++;  // skip next item, already placed
+      } else {
+        // Both fit — remove nextItem, let the loop place it normally
+        col.div.removeChild(nextItem);
+      }
     }
   }
 
+  const lastCol = colDivs[colDivs.length - 1];
   return colDivs.every(c => c.div.scrollHeight <= c.maxH);
 }
 
@@ -210,56 +263,90 @@ function layoutClues() {
   const gW = gridWrap.offsetWidth;
   const gH = gridWrap.offsetHeight;
 
-  const leftZoneW = W - gW - S.gridGapX;
-  const leftColW = (leftZoneW - (S.numLeftCols - 1) * S.colGap) / S.numLeftCols;
+  // Cap: never wider than what a 15x15 two-column layout produces (~160px)
+  const maxColW = 160;
+  const naturalLeftColW = (W - gW - S.gridGapX - (S.numLeftCols - 1) * S.colGap) / S.numLeftCols;
+  const leftColW = Math.min(maxColW, naturalLeftColW);
   const rightColTop = gH + S.gridGapY;
   const rightColW = (gW - (S.numRightCols - 1) * S.colGap) / S.numRightCols;
+
+  // Build geometry relative to x=0: left cols, then grid, then right cols under grid
+  const leftColsTotalW = S.numLeftCols * leftColW + (S.numLeftCols - 1) * S.colGap;
+  const gridLeft = leftColsTotalW + S.gridGapX;
+  const blockW = gridLeft + gW;
 
   const colGeom = [];
   for (let i = 0; i < S.numLeftCols; i++) {
     colGeom.push({
-      x: i * (leftColW + S.colGap), y: 0, w: leftColW, isLeft: true
+      x: i * (leftColW + S.colGap),
+      y: 0,
+      w: leftColW,
+      isLeft: true
     });
   }
   for (let i = 0; i < S.numRightCols; i++) {
     colGeom.push({
-      x: (W - gW) + i * (rightColW + S.colGap),
-      y: rightColTop, w: rightColW, isLeft: false
+      x: gridLeft + i * (rightColW + S.colGap),
+      y: rightColTop,
+      w: rightColW,
+      isLeft: false
     });
   }
 
   const items = buildClueElements();
-  let lo = Math.ceil(rightColTop + 60);
-  let hi = H;
-  let bestY = H;
 
-  for (let i = 0; i < 25; i++) {
-    const mid = Math.floor((lo + hi) / 2);
-    const fits = tryLayout(mid, H, colGeom, items, content);
-    if (fits) { bestY = mid; hi = mid; } else { lo = mid + 1; }
+  // Try left-only layout: skip the L-shape if clues fit next to the grid
+  let usedLeftOnly = false;
+  const leftOnlyMaxH = Math.ceil(gH * 1.25);
+  if (leftOnlyMaxH < H) {
+    const leftOnlyGeom = colGeom.filter(c => c.isLeft);
+    if (tryLayout(leftOnlyMaxH, leftOnlyMaxH, leftOnlyGeom, items, content)) {
+      usedLeftOnly = true;
+    }
   }
 
-  let finalY = Math.min(bestY + 5, H);
-  for (let attempt = 0; attempt < 10; attempt++) {
-    tryLayout(finalY, H, colGeom, items, content);
-    const cols = content.querySelectorAll('.clue-col');
-    let maxOverflow = 0;
-    cols.forEach(c => {
-      const ov = c.scrollHeight - c.clientHeight;
-      if (ov > maxOverflow) maxOverflow = ov;
-    });
-    if (maxOverflow <= 0) break;
-    finalY = Math.min(finalY + maxOverflow + 2, H);
+  if (!usedLeftOnly) {
+    // L-shaped layout — binary search for balanced bottomY
+    let lo = Math.ceil(rightColTop + 60);
+    let hi = H;
+    let bestY = H;
+
+    for (let i = 0; i < 25; i++) {
+      const mid = Math.floor((lo + hi) / 2);
+      const fits = tryLayout(mid, H, colGeom, items, content);
+      if (fits) {
+        bestY = mid;
+        hi = mid;
+      } else {
+        lo = mid + 1;
+      }
+    }
+
+    let finalY = Math.min(bestY + 5, H);
+    for (let attempt = 0; attempt < 10; attempt++) {
+      tryLayout(finalY, H, colGeom, items, content);
+      const cols = content.querySelectorAll('.clue-col');
+      let maxOverflow = 0;
+      cols.forEach(c => {
+        const ov = c.scrollHeight - c.clientHeight;
+        if (ov > maxOverflow) maxOverflow = ov;
+      });
+      if (maxOverflow <= 0) break;
+      finalY = Math.min(finalY + maxOverflow + 2, H);
+    }
   }
 
-  const colArr = Array.from(content.querySelectorAll('.clue-col'));
+  // Rebalance columns
+  const allCols = content.querySelectorAll('.clue-col');
+  const colArr = Array.from(allCols);
 
   function getSlackPerGap(col) {
     const kids = Array.from(col.children);
     if (kids.length < 2) return 9999;
     let contentH = 0;
     kids.forEach(k => { contentH += k.offsetHeight; });
-    return (col.clientHeight - contentH) / (kids.length - 1);
+    const slack = col.clientHeight - contentH;
+    return slack / (kids.length - 1);
   }
 
   for (let pass = 0; pass < 20; pass++) {
@@ -268,7 +355,9 @@ function layoutClues() {
       const curr = colArr[i];
       const next = colArr[i + 1];
       if (curr.children.length < 3) continue;
-      if (getSlackPerGap(next) < getSlackPerGap(curr) * 1.5) continue;
+      const currSpg = getSlackPerGap(curr);
+      const nextSpg = getSlackPerGap(next);
+      if (nextSpg < currSpg * 1.5) continue;
       const item = curr.lastChild;
       curr.removeChild(item);
       next.insertBefore(item, next.firstChild);
@@ -282,11 +371,20 @@ function layoutClues() {
     if (!moved) break;
   }
 
-  // Vertically justify using flexbox space-between
+  // Vertically justify using flexbox space-between (skip for left-only layout)
+  if (!usedLeftOnly) {
+    colArr.forEach(col => {
+      col.style.display = 'flex';
+      col.style.flexDirection = 'column';
+      col.style.justifyContent = 'space-between';
+    });
+  }
+
+  // Center the entire block on the page
+  const offsetX = Math.max(0, (W - blockW) / 2);
+  gridWrap.style.left = (gridLeft + offsetX) + 'px';
   colArr.forEach(col => {
-    col.style.display = 'flex';
-    col.style.flexDirection = 'column';
-    col.style.justifyContent = 'space-between';
+    col.style.left = (parseFloat(col.style.left) + offsetX) + 'px';
   });
 }
 
@@ -304,6 +402,9 @@ function doLayout() {
 doLayout();
 window.addEventListener('beforeprint', layoutClues);
 window.addEventListener('afterprint', layoutClues);
+</script>
+</body>
+</html>
 """
 
 
@@ -314,12 +415,16 @@ def _puzzle_data(puzzle: puz.Puzzle) -> dict[str, Any]:
         if clue.cell not in numbered:
             numbered[clue.cell] = clue.number
 
+    diagramless = puzzle.puzzletype == puz.PuzzleType.Diagramless
+
     grid_cells = []
     for i, ch in enumerate(puzzle.solution):
         cell: dict[str, Any] = {
             'index': i, 'row': i // puzzle.width, 'col': i % puzzle.width
         }
-        if is_blacksquare(ch):
+        if diagramless:
+            cell['type'] = 'white'
+        elif is_blacksquare(ch):
             cell['type'] = 'black'
         else:
             cell['type'] = 'white'
@@ -360,72 +465,136 @@ def render_html(puzzle: puz.Puzzle) -> str:
         html_lib.escape(puzzle.title, quote=False) if puzzle.title
         else 'Crossword'
     )
+    return (
+        _TEMPLATE
+        .replace('__TITLE__', page_title)
+        .replace('__PUZZLE_DATA__', puzzle_json)
+    )
 
-    return f"""<!DOCTYPE html>
+
+_INDEX_CSS = """\
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
+    Arial, sans-serif;
+  color: #1f2328; background: #fff; line-height: 1.5;
+  max-width: 640px; margin: 0 auto; padding: 40px 24px;
+}
+h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+.subtitle { font-size: 14px; color: #656d76; margin-bottom: 24px; }
+ul { list-style: none; }
+li { border-top: 1px solid #d1d9e0; }
+li:last-child { border-bottom: 1px solid #d1d9e0; }
+a {
+  display: block; padding: 10px 4px; color: #0969da;
+  text-decoration: none; font-size: 14px;
+}
+a:hover { background: #f6f8fa; }
+"""
+
+
+def _generate_index(directory: str, files: list[str]) -> None:
+    items = '\n'.join(
+        f'<li><a href="{f}">{f}</a></li>' for f in sorted(files)
+    )
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>{page_title}</title>
+<title>puzpy viewer</title>
 <style>
-{_CSS}
+{_INDEX_CSS}
 </style>
 </head>
 <body>
-<div class="page">
-  <div class="puzzle-title" id="title"></div>
-  <hr class="title-rule">
-  <div class="content-area" id="content">
-    <div class="grid-wrap" id="gridWrap">
-      <table class="grid-table" id="grid"></table>
-    </div>
-  </div>
-  <hr class="footer-rule">
-  <div class="footer">
-    <span id="author"></span>
-    <span class="footer-copyright" id="copyright"></span>
-  </div>
-</div>
-<script>
-const PUZZLE = {puzzle_json};
-{_JS}
-</script>
+<h1>puzpy viewer</h1>
+<p class="subtitle">Sample crossword puzzles rendered by puz_viewer</p>
+<ul>
+{items}
+</ul>
 </body>
 </html>"""
+    with open(os.path.join(directory, 'index.html'), 'w', encoding='utf-8') as f:
+        f.write(html)
+
+
+def _load_puzzle(raw: bytes, fmt: str) -> puz.Puzzle:
+    resolved = fmt if fmt != 'auto' else _detect_format(raw)
+    if resolved == 'puz':
+        return puz.load(raw)
+    return puz.load_text(raw.decode())
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description='Generate an HTML viewer for a crossword puzzle'
+        description="Generate an HTML viewer for a crossword puzzle or puzzles"
     )
     parser.add_argument(
-        'puzzle', nargs='?', default='-',
-        help='Path to .puz or .txt file (default: stdin)'
+        'puzzles', nargs='*', default=['-'],
+        help="Paths to .puz or .txt files (default: stdin)"
     )
-    parser.add_argument('-o', '--output', help='Output HTML file (default: stdout)')
+    parser.add_argument(
+        '-o', '--outfile',
+        help="Output HTML filename (default: stdout, or auto-generated from input filename in batch mode)"
+    )
+    parser.add_argument(
+        '--outdir', help="Output directory for HTML files (default: .)"
+    )
     parser.add_argument(
         '-f', '--format', choices=['auto', 'puz', 'txt'], default='auto',
-        help='Input format (default: auto-detect)'
+        help="Input format (default: auto-detect)"
+    )
+    parser.add_argument(
+        '--index', action='store_true',
+        help="Generate index.html in output directory (batch mode)"
     )
     args = parser.parse_args()
 
-    if args.puzzle == '-':
-        raw = sys.stdin.buffer.read()
-    else:
-        with open(args.puzzle, 'rb') as f:
-            raw = f.read()
+    outdir = args.outdir or '.'
 
-    fmt = args.format if args.format != 'auto' else _detect_format(raw)
-    p = puz.load(raw) if fmt == 'puz' else puz.load_text(raw.decode())
+    def default_outfile(src: str) -> str:
+        base = os.path.splitext(os.path.basename(src))[0]
+        return base + '.html'
 
-    out = render_html(p)
+    # Single file mode: one puzzle to stdout or -o file
+    if len(args.puzzles) == 1 and not args.index:
+        src = args.puzzles[0]
+        if src == '-':
+            raw = sys.stdin.buffer.read()
+        else:
+            with open(src, 'rb') as f:
+                raw = f.read()
+        p = _load_puzzle(raw, args.format)
+        out = render_html(p)
+        if args.outfile or args.outdir:
+            outfile = os.path.join(outdir, args.outfile or default_outfile(src))
+            with open(outfile, 'w', encoding='utf-8') as fout:
+                fout.write(out)
+        else:
+            if hasattr(sys.stdout, 'reconfigure'):
+                sys.stdout.reconfigure(encoding='utf-8')
+            sys.stdout.write(out)
+        return
 
-    if args.output:
-        with open(args.output, 'w', encoding='utf-8') as f:
-            f.write(out)
-    else:
-        if hasattr(sys.stdout, 'reconfigure'):
-            sys.stdout.reconfigure(encoding='utf-8')
-        sys.stdout.write(out)
+    # Batch mode: multiple puzzles to output directory
+    os.makedirs(outdir, exist_ok=True)
+    generated: list[str] = []
+    for src in args.puzzles:
+        name = default_outfile(src)
+        try:
+            with open(src, 'rb') as f:
+                raw = f.read()
+            p = _load_puzzle(raw, args.format)
+            out = render_html(p)
+            with open(os.path.join(outdir, name), 'w', encoding='utf-8') as fout:
+                fout.write(out)
+            generated.append(name)
+            print(f'OK: {src}', file=sys.stderr)
+        except Exception as e:
+            print(f'SKIP: {src} ({e})', file=sys.stderr)
+
+    if args.index:
+        _generate_index(outdir, generated)
 
 
 if __name__ == '__main__':
