@@ -17,7 +17,11 @@ pip install puzpy
 
 ### From source (for development)
 ```bash skip
-pip install .[dev]
+uv sync --extra dev
+```
+Or with pip:
+```bash skip
+pip install -e .[dev]
 ```
 
 ## Example Usage
@@ -90,12 +94,17 @@ it can round-trip 100% of them with full fidelity.
 
 ### Unit tests
 ```bash skip
-pytest -v
+uv run pytest
 ```
 
-### lint
+### Lint
 ```bash skip
-flake8 . --show-source --statistics
+uv run ruff check
+```
+
+### Type check
+```bash skip
+uv run pyright
 ```
 
 ## Viewer
