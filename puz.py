@@ -1,8 +1,6 @@
 ﻿from __future__ import annotations  # for Python 3.9 and earlier
 
-import functools
 import importlib.metadata
-import operator
 import math
 import string
 import struct
@@ -1088,8 +1086,7 @@ def unshift(s: str, key: list[int]) -> str:
 
 def shuffle(s: str) -> str:
     mid = int(math.floor(len(s) / 2))
-    items = functools.reduce(operator.add, zip(s[mid:], s[:mid]))
-    return ''.join(items) + (s[-1] if len(s) % 2 else '')
+    return ''.join(a + b for a, b in zip(s[mid:], s[:mid])) + (s[-1] if len(s) % 2 else '')
 
 
 def unshuffle(s: str) -> str:
