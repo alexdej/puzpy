@@ -1,9 +1,10 @@
+import glob
 import os
 import pathlib
 import sys
 import tempfile
+
 import pytest
-import glob
 
 import puz
 import puz_viewer
@@ -89,8 +90,8 @@ def test_grid() -> None:
     edge_down = next(e for e in clues.down if e['row'] + e['len'] == p.height)
     assert clues.len_down(edge_down['cell']) == edge_down['len']
 
-    assert 'LAMB' == soln.get_string_for_clue(a1)
-    assert 'LOFT' == soln.get_string_for_clue(d1)
+    assert soln.get_string_for_clue(a1) == 'LAMB'
+    assert soln.get_string_for_clue(d1) == 'LOFT'
 
     assert soln.get_cell(0, 0) == 'L'
     assert soln.get_column(0)[0] == 'L'
@@ -165,10 +166,10 @@ def test_rebus() -> None:
     assert p.has_rebus()
     r = p.rebus()
     assert r.has_rebus()
-    assert 3 == len(r.get_rebus_squares())
+    assert len(r.get_rebus_squares()) == 3
     for i in r.get_rebus_squares():
         assert r.is_rebus_square(i)
-        assert 'STAR' == r.get_rebus_solution(i)
+        assert r.get_rebus_solution(i) == 'STAR'
 
     i = r.get_rebus_squares()[0]
     r.set_rebus_fill(i, 'STAR')
@@ -328,19 +329,19 @@ def test_v1_4() -> None:
 
 def test_v2_unicode() -> None:
     p = puz.read('testfiles/unicode.puz')
-    assert p.title == u'\u2694\ufe0f'
+    assert p.title == '\u2694\ufe0f'
     assert p.encoding == 'UTF-8'
     assert p.version_tuple() == (2, 0)
 
 
 def test_v2_upgrade() -> None:
     p = puz.read('testfiles/washpost.puz')
-    p.title = u'\u2694\ufe0f'
+    p.title = '\u2694\ufe0f'
     p.set_version('2.0')
     p.encoding = puz.ENCODING_UTF8
     data = p.tobytes()
     p2 = puz.load(data)
-    assert p2.title == u'\u2694\ufe0f'
+    assert p2.title == '\u2694\ufe0f'
     assert p2.version_tuple() == (2, 0)
 
 
@@ -397,7 +398,7 @@ def test_rebus_player_flow() -> None:
     r = p.rebus()
     assert r.has_rebus()
 
-    assert 3 == len(r.get_rebus_squares())
+    assert len(r.get_rebus_squares()) == 3
     for i in r.get_rebus_squares():
         r.set_rebus_fill(i, 'STAR')
 
@@ -461,10 +462,10 @@ def test_rebus_constructor_flow() -> None:
 
 
 def test_scramble_functions() -> None:
-    assert 'MLOOPKJ' == puz.scramble_string('AEBFCDG', 1234)
-    assert 'MOP..KLOJ' == puz.scramble_solution('ABC..DEFG', 3, 3, 1234)
-    assert 'AEBFCDG' == puz.unscramble_string('MLOOPKJ', 1234)
-    assert 'ABC..DEFG' == puz.unscramble_solution('MOP..KLOJ', 3, 3, 1234)
+    assert puz.scramble_string('AEBFCDG', 1234) == 'MLOOPKJ'
+    assert puz.scramble_solution('ABC..DEFG', 3, 3, 1234) == 'MOP..KLOJ'
+    assert puz.unscramble_string('MLOOPKJ', 1234) == 'AEBFCDG'
+    assert puz.unscramble_solution('MOP..KLOJ', 3, 3, 1234) == 'ABC..DEFG'
     a = 'ABCD.EFGH.KHIJKLM.NOPW.XYZ'
     scrambled = puz.scramble_solution(a, 13, 2, 9721)
     unscrambled = puz.unscramble_solution(scrambled, 13, 2, 9721)
@@ -520,7 +521,7 @@ def test_check_answers_strict() -> None:
 
     # strict=False raises on a locked puzzle
     p_locked = puz.read('testfiles/nyt_locked.puz')
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='non-strict checking not possible'):
         p_locked.check_answers(p_locked.fill, strict=False)
 
 
@@ -666,14 +667,14 @@ def test_text_format_mark_write() -> None:
     text = puz.to_text_format(p)
     assert '<ACROSS PUZZLE v2>' in text
     assert '\tMARK;' in text
-    grid_line = [line for line in text.splitlines() if line.strip().startswith('a')][0]
+    grid_line = next(line for line in text.splitlines() if line.strip().startswith('a'))
     assert grid_line == '\taBc'  # circled cells written as lowercase
 
 
 def test_convert_text_to_puz() -> None:
     p = puz.read_text('testfiles/text_format_v1.txt')
-    bytes = p.tobytes()
-    p2 = puz.load(bytes)
+    data = p.tobytes()
+    p2 = puz.load(data)
     assert p.title == p2.title
     assert p.author == p2.author
     assert p.copyright == p2.copyright
@@ -719,7 +720,7 @@ def test_to_text_format_custom_version() -> None:
 
 def test_to_text_format_invalid_version() -> None:
     p = puz.read('testfiles/washpost.puz')
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='invalid text_version'):
         puz.to_text_format(p, text_version=None)  # type: ignore
 
 
@@ -774,7 +775,7 @@ def test_check_rebus_fill_non_rebus_square() -> None:
     r = p.rebus()
     # index 0 is not a rebus square
     assert not r.is_rebus_square(0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='not a rebus square'):
         r.check_rebus_fill(0)
 
 
@@ -888,11 +889,11 @@ def test_rebus_fill_returns_none_for_non_rebus_square() -> None:
 
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*.txt'))
 def test_textfile_roundtrip(filename: str) -> None:
-    with open(filename, 'r', encoding='utf-8') as fp:
+    with open(filename, encoding='utf-8') as fp:
         orig = fp.read()
         p = puz.read_text(filename)
         new = puz.to_text_format(p)
-        assert orig == new, '%s did not round-trip' % filename
+        assert orig == new, f'{filename} did not round-trip'
 
 
 def test_helpers_roundtrip() -> None:
@@ -927,7 +928,7 @@ def test_puzfile_roundtrip(filename: str) -> None:
         orig = fp.read()
         p = puz.read(filename)
         new = p.tobytes()
-        assert orig == new, '%s did not round-trip' % filename
+        assert orig == new, f'{filename} did not round-trip'
 
 
 @pytest.mark.parametrize('filename', _not_bad(glob.glob('testfiles/*.puz')))
@@ -942,7 +943,7 @@ def test_puzfile_roundtrip_with_helpers(filename: str) -> None:
         if p.has_timer():
             p.timer()    # side effect: instantiates Timer helper
         new = p.tobytes()
-        assert orig == new, '%s did not round-trip' % filename
+        assert orig == new, f'{filename} did not round-trip'
 
 
 @pytest.mark.parametrize('filename', glob.glob('testfiles/*_bad.puz'))

@@ -60,6 +60,9 @@ typeCheckingMode = "standard"
 line-length = 127
 target-version = "py39"
 
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM", "RET", "RUF", "A", "PT", "PIE"]
+
 [build-system]
 requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
