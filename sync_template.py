@@ -22,15 +22,14 @@ def templatize(html: str) -> str:
     result = re.sub(
         r'<title>.*?</title>',
         '<title>__TITLE__</title>',
-        result := html,
+        html,
     )
     # Replace const PUZZLE = {...}; with placeholder
-    result = re.sub(
+    return re.sub(
         r'const PUZZLE = \{.*?\};',
         'const PUZZLE = __PUZZLE_DATA__;',
         result,
     )
-    return result
 
 
 def main() -> None:
