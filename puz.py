@@ -258,10 +258,10 @@ class Puzzle:
         self.author = s.read_string()
         self.copyright = s.read_string()
 
-        self.clues = [s.read_string() for i in range(numclues)]
+        self.clues = [s.read_string() for _ in range(numclues)]
         self.notes = s.read_string()
 
-        ext_cksum = {}
+        ext_cksum: dict[bytes, int] = {}
         while s.can_unpack(EXTENSION_HEADER_FORMAT):
             code, length, cksum = s.unpack(EXTENSION_HEADER_FORMAT)
             ext_cksum[code] = cksum
@@ -808,7 +808,7 @@ class Rebus(PuzzleHelper):
 
         if Extensions.RebusFill in self.puzzle.extensions:
             s = PuzzleBuffer(self.puzzle.extensions[Extensions.RebusFill], encoding=puzzle.encoding)
-            fill = []
+            fill: list[str] = []
             while s.can_read():
                 fill.append(s.read_string())
             self.fill = (fill + [''] * N)[:N]
@@ -1252,7 +1252,7 @@ def text_file_as_dict(s: str) -> dict[str, str]:
 
 def to_text_format(p: Puzzle, text_version: str = 'v1') -> str:
     TAB = '\t'  # most lines begin indented with whitespace
-    lines = []
+    lines: list[str] = []
 
     has_rebus = p.has_rebus()
     # text only supports circled cells using the MARK flag
@@ -1294,7 +1294,7 @@ def to_text_format(p: Puzzle, text_version: str = 'v1') -> str:
             if sol and sol not in solution_to_short_char:
                 solution_to_short_char[sol] = p.solution[i]
 
-    circled_squares = set(p.markup().get_markup_squares(GridMarkup.Circled)) if has_mark else set()
+    circled_squares: set[int] = set(p.markup().get_markup_squares(GridMarkup.Circled)) if has_mark else set()
 
     lines.append('<GRID>')
     for row_idx in range(p.height):

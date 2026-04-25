@@ -417,7 +417,7 @@ def _puzzle_data(puzzle: puz.Puzzle) -> dict[str, Any]:
 
     diagramless = puzzle.puzzletype == puz.PuzzleType.Diagramless
 
-    grid_cells = []
+    grid_cells: list[dict[str, Any]] = []
     for i, ch in enumerate(puzzle.solution):
         cell: dict[str, Any] = {
             'index': i, 'row': i // puzzle.width, 'col': i % puzzle.width
