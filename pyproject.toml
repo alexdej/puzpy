@@ -27,11 +27,11 @@ maintainers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-codeblocks", "pytest-cov", "pytest-flake8", "pytest-mypy"]
+dev = ["pytest", "pytest-codeblocks", "pytest-cov", "pyright", "ruff"]
 publish = ["build", "twine"]
 
 [tool.pytest.ini_options]
-addopts = "--codeblocks --mypy --flake8"
+addopts = "--codeblocks"
 testpaths = ["README.md", "*.py"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
@@ -51,10 +51,14 @@ py-modules = ["puz"]
 Repository = "https://github.com/alexdej/puzpy.git"
 Issues = "https://github.com/alexdej/puzpy/issues"
 
-[tool.mypy]
-files = ["*.py"]
-strict = true
-no_incremental = true
+[tool.pyright]
+include = ["*.py"]
+pythonVersion = "3.9"
+typeCheckingMode = "standard"
+
+[tool.ruff]
+line-length = 127
+target-version = "py39"
 
 [build-system]
 requires = ["setuptools >= 77.0.3"]

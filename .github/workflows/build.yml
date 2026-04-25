@@ -24,17 +24,33 @@ jobs:
 
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 #v6.2.0
+    - name: Set up uv
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b #v8.1.0
       with:
-        python-version: ${{ matrix.python-version }}
-        cache: pip
+        enable-cache: true
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+      run: uv sync --extra dev --python ${{ matrix.python-version }}
     - name: unit tests
-      run: pytest
+      run: uv run pytest
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
+    - name: Set up uv
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b #v8.1.0
+      with:
+        enable-cache: true
+    - name: Set up Python
+      run: uv python install 3.13
+    - name: Install dependencies
+      run: uv sync --extra dev --python 3.13
+    - name: ruff
+      run: uv run ruff check
+    - name: pyright
+      run: uv run pyright
 
   coverage:
     needs: run-tests
@@ -51,19 +67,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
-    - name: Set up Python
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 #v6.2.0
+    - name: Set up uv
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b #v8.1.0
       with:
-        python-version: "3.13"
-        cache: pip
+        enable-cache: true
+    - name: Set up Python
+      run: uv python install 3.13
     - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+      run: uv sync --extra dev --python 3.13
     - name: Run coverage
-      run: pytest --cov --cov-report=html:site/coverage --cov-report=json:site/coverage/coverage.json
+      run: uv run pytest --cov --cov-report=html:site/coverage --cov-report=json:site/coverage/coverage.json
     - name: Generate puzzle viewers
-      run: python puz_viewer.py testfiles/*.puz testfiles/*.txt --outdir site/viewer --index
+      run: uv run python puz_viewer.py testfiles/*.puz testfiles/*.txt --outdir site/viewer --index
     - name: Upload pages artifact
       uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 #v5.0.0
       with:

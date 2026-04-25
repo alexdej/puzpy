@@ -1,5 +1,6 @@
 import argparse
 import html as html_lib
+import io
 import json
 import os
 import sys
@@ -570,7 +571,7 @@ def main() -> None:
             with open(outfile, 'w', encoding='utf-8') as fout:
                 fout.write(out)
         else:
-            if hasattr(sys.stdout, 'reconfigure'):
+            if isinstance(sys.stdout, io.TextIOWrapper):
                 sys.stdout.reconfigure(encoding='utf-8')
             sys.stdout.write(out)
         return

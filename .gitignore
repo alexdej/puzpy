@@ -57,6 +57,10 @@ target/
 # pyenv
 .python-version
 
+# uv
+uv.lock
+.venv/
+
 # editor files
 *.swp
 .vscode
