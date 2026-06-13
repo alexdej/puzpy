@@ -984,15 +984,23 @@ class Timer(PuzzleHelper):
 
 # helper functions for cksums and scrambling
 def data_cksum(data: bytes, cksum: int = 0) -> int:
-    for b in data:
-        # right-shift one with wrap-around
-        lowbit = (cksum & 0x0001)
-        cksum = (cksum >> 1)
-        if lowbit:
-            cksum = (cksum | 0x8000)
+    """Compute the .puz CRC-16 checksum over byte data.
 
-        # then add in the data and clear any carried bit past 16
-        cksum = (cksum + b) & 0xffff
+    For each byte, the running checksum is right-shifted by one with
+    wrap-around (the low bit becomes the high bit), then the byte
+    value is added and the result is masked to 16 bits.
+    """
+    WRAP_BIT = 0x8000
+    MASK_16BIT = 0xffff
+    for byte_val in data:
+        # right-shift one with wrap-around
+        low_bit = cksum & 0x0001
+        cksum >>= 1
+        if low_bit:
+            cksum |= WRAP_BIT
+
+        # add the data byte and clear any carried bit past 16
+        cksum = (cksum + byte_val) & MASK_16BIT
 
     return cksum
 
@@ -1009,26 +1017,29 @@ def scramble_solution(solution: str, width: int, height: int, key: int, ignore_c
     return square(data, height, width)
 
 
-def scramble_string(s: str, key: int) -> str:
-    """
-    s is the puzzle's solution in column-major order, omitting black squares:
-    i.e. if the puzzle is:
+def scramble_string(text: str, key: int) -> str:
+    """Scramble a solution string using a 4-digit key.
+
+    The text is the puzzle's solution in column-major order, omitting
+    black squares. For example, if the puzzle grid is::
+
         C A T
         # # A
         # # R
-    solution is CATAR
 
+    the column-major solution (omitting black squares) is 'CATAR'.
 
-    Key is a 4-digit number in the range 1000 <= key <= 9999
-
+    The key must be a 4-digit number in the range 1000 <= key <= 9999.
+    Each digit of the key triggers one round of shift, rotate, and shuffle.
     """
     digits = key_digits(key)
-    for k in digits:          # foreach digit in the key
-        s = shift(s, digits)  # for each char by each digit in the key in sequence
-        s = s[k:] + s[:k]  # cut the sequence around the key digit
-        s = shuffle(s)     # do a 1:1 shuffle of the 'deck'
+    result = text
+    for digit in digits:
+        result = shift(result, digits)    # Caesar-shift each character by rotating key digits
+        result = result[digit:] + result[:digit]  # Rotate the string around the key digit
+        result = shuffle(result)          # Perfect shuffle (interleave halves)
 
-    return s
+    return result
 
 
 def unscramble_solution(scrambled: str, width: int, height: int, key: int, ignore_chars: str = BLACKSQUARE) -> str:
@@ -1038,15 +1049,17 @@ def unscramble_solution(scrambled: str, width: int, height: int, key: int, ignor
     return square(data, height, width)
 
 
-def unscramble_string(s: str, key: int) -> str:
+def unscramble_string(text: str, key: int) -> str:
+    """Reverse the scramble_string operation to recover the original text."""
     digits = key_digits(key)
-    l = len(s)  # noqa: E741
-    for k in digits[::-1]:
-        s = unshuffle(s)
-        s = s[l-k:] + s[:l-k]
-        s = unshift(s, digits)
+    text_len = len(text)
+    result = text
+    for digit in digits[::-1]:
+        result = unshuffle(result)
+        result = result[text_len - digit:] + result[:text_len - digit]
+        result = unshift(result, digits)
 
-    return s
+    return result
 
 
 def scrambled_cksum(scrambled: str, width: int, height: int, ignore_chars: str = BLACKSQUARE, encoding: str = ENCODING) -> int:
@@ -1059,9 +1072,15 @@ def key_digits(key: int) -> list[int]:
 
 
 def square(data: str, w: int, h: int) -> str:
-    aa = [data[i:i+w] for i in range(0, len(data), w)]
+    """Transpose a flat string between row-major and column-major order.
+
+    Splits the string into rows of width `w`, then reads column-by-column
+    to produce the transposed result. Calling square() twice with swapped
+    width/height restores the original string.
+    """
+    rows = [data[i:i + w] for i in range(0, len(data), w)]
     return ''.join(
-        [''.join([aa[r][c] for r in range(h)]) for c in range(w)]
+        ''.join(rows[row][col] for row in range(h)) for col in range(w)
     )
 
 
@@ -1078,33 +1097,57 @@ def unshift(s: str, key: list[int]) -> str:
 
 
 def shuffle(s: str) -> str:
+    """Perfect shuffle: interleave the second half into the first half.
+
+    For 'ABCDEF' → 'DAEBFC' (second half 'DEF' interleaved into first 'ABC').
+    If the string has odd length, the last character is appended unchanged.
+    """
     mid = len(s) // 2
-    return ''.join(a + b for a, b in zip(s[mid:], s[:mid])) + (s[-1] if len(s) % 2 else '')
+    first_half = s[:mid]
+    second_half = s[mid:]
+    interleaved = ''.join(a + b for a, b in zip(second_half, first_half))
+    # Odd-length strings have one leftover character at the end
+    trailing_char = s[-1] if len(s) % 2 else ''
+    return interleaved + trailing_char
 
 
 def unshuffle(s: str) -> str:
     return s[1::2] + s[::2]
 
 
-def restore(s: str, t: Iterable[str]) -> str:
-    """
-    s is the source string, it can contain '.'
-    t is the target, it's smaller than s by the number of '.'s in s
+def restore(source: str, replacement: Iterable[str]) -> str:
+    """Replace non-blacksquare characters in source with characters from replacement.
 
-    Each char in s is replaced by the corresponding
-    char in t, jumping over '.'s in s.
+    The source string can contain black squares ('.' or ':'). Each non-blacksquare
+    character is replaced by the next character from the replacement iterable,
+    while black squares are preserved in place.
 
     >>> restore('ABC.DEF', 'XYZABC')
     'XYZ.ABC'
     """
-    t = (c for c in t)
-    return ''.join(next(t) if not is_blacksquare(c) else c for c in s)
+    repl_iter = iter(replacement)
+    result_chars = []
+    for char in source:
+        if is_blacksquare(char):
+            result_chars.append(char)
+        else:
+            result_chars.append(next(repl_iter))
+    return ''.join(result_chars)
 
 
 def is_blacksquare(c: str | int) -> bool:
+    """Check if a character represents a black square in the crossword grid.
+
+    Accepts both string characters and integer code points.
+    Black squares are represented by '.' (normal) or ':' (diagramless).
+    """
     if isinstance(c, int):
         c = chr(c)
-    return c in [BLACKSQUARE, BLACKSQUARE2]
+    return c in _BLACKSQUARE_CHARS
+
+
+# Pre-computed set for O(1) black square lookups
+_BLACKSQUARE_CHARS = frozenset([BLACKSQUARE, BLACKSQUARE2])
 
 
 #
