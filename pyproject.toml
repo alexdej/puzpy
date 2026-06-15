@@ -27,13 +27,18 @@ maintainers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-codeblocks", "pytest-cov", "pyright", "ruff"]
+dev = [
+    "pytest<9.1", 
+    "pytest-codeblocks", 
+    "pytest-cov",
+    "pyright", 
+    "ruff"
+]
 publish = ["build", "twine"]
 
 [tool.pytest.ini_options]
 addopts = "--codeblocks"
 testpaths = ["README.md", "*.py"]
-filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
 source = ["puz"]
