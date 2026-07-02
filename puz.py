@@ -966,11 +966,13 @@ class Timer(PuzzleHelper):
 
     def __init__(self, puzzle: Puzzle) -> None:
         self.puzzle = puzzle
+        self._present = Extensions.Timer in self.puzzle.extensions
         timer_data = self.puzzle.extensions.get(Extensions.Timer, b'0,1')
         elapsed_str, status_str = timer_data.decode().split(',')
 
         self.elapsed_seconds = int(elapsed_str)
         self.status = TimerStatus(int(status_str))
+        self._loaded = (self.elapsed_seconds, self.status)
 
     def is_running(self) -> bool:
         return self.status == TimerStatus.Running
@@ -979,7 +981,8 @@ class Timer(PuzzleHelper):
         return self.status == TimerStatus.Stopped
 
     def save(self) -> None:
-        self.puzzle.extensions[Extensions.Timer] = f'{self.elapsed_seconds},{self.status}'.encode()
+        if self._present or (self.elapsed_seconds, self.status) != self._loaded:
+            self.puzzle.extensions[Extensions.Timer] = f'{self.elapsed_seconds},{self.status}'.encode()
 
 
 # helper functions for cksums and scrambling
