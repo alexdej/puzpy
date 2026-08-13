@@ -966,7 +966,6 @@ class Timer(PuzzleHelper):
 
     def __init__(self, puzzle: Puzzle) -> None:
         self.puzzle = puzzle
-        self._present = Extensions.Timer in self.puzzle.extensions
         timer_data = self.puzzle.extensions.get(Extensions.Timer, b'0,1')
         elapsed_str, status_str = timer_data.decode().split(',')
 
@@ -981,7 +980,8 @@ class Timer(PuzzleHelper):
         return self.status == TimerStatus.Stopped
 
     def save(self) -> None:
-        if self._present or (self.elapsed_seconds, self.status) != self._loaded:
+        if (Extensions.Timer in self.puzzle.extensions
+                or (self.elapsed_seconds, self.status) != self._loaded):
             self.puzzle.extensions[Extensions.Timer] = f'{self.elapsed_seconds},{self.status}'.encode()
 
 
