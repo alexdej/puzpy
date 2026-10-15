@@ -65,7 +65,7 @@ for row in p.solution_grid():
 #
 # Save a puzzle with modifications:
 #
-p.fill = 'LAMB' + p.fill[:4]
+p.fill = 'LAMB' + p.fill[4:]
 p.save('example.puz')
 
 #
