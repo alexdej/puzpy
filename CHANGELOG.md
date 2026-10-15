@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 (Oct 15, 2026)
+
+- Puzzle(version='2.0') and set_version() now pick the text encoding from the version, as load() already did: UTF-8 for 2.0 and later, ISO-8859-1 before. set_version() resets any encoding set by hand.
+- tobytes() raises ValueError if solution or fill isn't exactly one byte per square, instead of writing a file that fails to load. A non-ASCII character in the grid needs a rebus. (#103, #105)
+- Reading the timer no longer adds an LTIM section to a puzzle that didn't have one, and has_timer() only reports a timer that will be saved. (#95)
+
+Thanks to @ArmaanjeetSandhu for both fixes.
+
 ## 0.6.0 (Mar 24, 2026)
 Improved API for Clues and Grid
 
