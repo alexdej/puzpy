@@ -986,9 +986,17 @@ def test_timer_read_only_does_not_inject_extension() -> None:
     assert orig == new, 'reading the timer broke the byte-exact round-trip'
 
 
+def test_timer_read_only_has_timer_is_false() -> None:
+    p = puz.read('testfiles/nyt_nov0596.puz')
+    _ = p.timer().elapsed_seconds
+    assert not p.has_timer()
+    p.timer().elapsed_seconds = 5
+    assert p.has_timer()
+
+
 def test_timer_added_to_puzzle_without_one_is_saved() -> None:
     p = _make_puzzle()
-    assert not p.has_timer() or puz.Extensions.Timer not in p.extensions
+    assert not p.has_timer()
     t = p.timer()
     t.elapsed_seconds = 30
     t.status = puz.TimerStatus.Running
