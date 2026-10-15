@@ -338,11 +338,54 @@ def test_v2_upgrade() -> None:
     p = puz.read('testfiles/washpost.puz')
     p.title = '\u2694\ufe0f'
     p.set_version('2.0')
-    p.encoding = puz.ENCODING_UTF8
+    assert p.encoding == puz.ENCODING_UTF8
     data = p.tobytes()
     p2 = puz.load(data)
     assert p2.title == '\u2694\ufe0f'
     assert p2.version_tuple() == (2, 0)
+
+
+def test_encoding_follows_version() -> None:
+    assert puz.Puzzle().encoding == puz.ENCODING
+    assert puz.Puzzle(version='1.4').encoding == puz.ENCODING
+    assert puz.Puzzle(version='2.0').encoding == puz.ENCODING_UTF8
+    assert puz.Puzzle(version=b'2.0').encoding == puz.ENCODING_UTF8
+    p = puz.Puzzle(version='2.0')
+    p.set_version('1.3')
+    assert p.encoding == puz.ENCODING
+
+
+def _small_puzzle(version: str, solution: str) -> puz.Puzzle:
+    p = puz.Puzzle(version=version)
+    p.width = p.height = 3
+    p.solution, p.fill = solution, '-' * 9
+    p.title, p.author, p.copyright = 't', 'a', 'c'
+    p.clues = ['x'] * 6
+    return p
+
+
+def test_v2_new_puzzle_utf8_roundtrip() -> None:
+    p = _small_puzzle('2.0', 'ABCDEFGHI')
+    p.clues[0] = '\u03a6 in a clue'
+    p2 = puz.load(p.tobytes())
+    assert p2.clues[0] == '\u03a6 in a clue'
+    assert p2.solution == 'ABCDEFGHI'
+
+
+def test_multibyte_grid_char_raises() -> None:
+    p = _small_puzzle('2.0', '\u03a6BCDEFGHI')
+    with pytest.raises(ValueError, match='rebus'):
+        p.tobytes()
+    p = _small_puzzle('2.0', 'ABCDEFGHI')
+    p.fill = '\u03a6--------'
+    with pytest.raises(ValueError, match='fill'):
+        p.tobytes()
+
+
+def test_wrong_grid_length_raises() -> None:
+    p = _small_puzzle('1.3', 'ABCDEFGH')
+    with pytest.raises(ValueError, match='needs exactly 9'):
+        p.tobytes()
 
 
 def test_save_empty_puzzle() -> None:

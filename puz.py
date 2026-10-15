@@ -174,6 +174,12 @@ def load_text(text: str) -> Puzzle:
     return from_text_format(text)
 
 
+def encoding_for_version(version: tuple[int, ...]) -> str:
+    """Text encoding used by .puz files of the given version:
+    ISO-8859-1 before version 2.0, UTF-8 from 2.0 on."""
+    return ENCODING if version[0] < 2 else ENCODING_UTF8
+
+
 class PuzzleFormatError(Exception):
     """
     Indicates a format error in the .puz file. May be thrown due to
@@ -199,8 +205,7 @@ class Puzzle:
         self.copyright = ''
         self.width = 0
         self.height = 0
-        self.set_version(version)
-        self.encoding = ENCODING
+        self.set_version(version)  # also sets self.encoding
         # these are bytes that might be unused
         self.unk1 = b'\0' * 2
         self.unk2 = b'\0' * 12
@@ -248,7 +253,7 @@ class Puzzle:
 
         self.version = self.fileversion[:3]
         # Once we have fileversion we can guess the encoding
-        self.encoding = ENCODING if self.version_tuple()[0] < 2 else ENCODING_UTF8
+        self.encoding = encoding_for_version(self.version_tuple())
         s.encoding = self.encoding
 
         self.solution = s.read(self.width * self.height).decode(self.encoding)
@@ -301,6 +306,10 @@ class Puzzle:
             if isinstance(h, PuzzleHelper):
                 h.save()
 
+        # the grids are one byte per square; check before computing checksums
+        self._check_grid_bytes('solution', self.solution)
+        self._check_grid_bytes('fill', self.fill)
+
         # include any preamble text we might have found on read
         s.write(self.preamble)
 
@@ -347,6 +356,24 @@ class Puzzle:
 
         return s.tobytes()
 
+    def _check_grid_bytes(self, name: str, grid: str) -> None:
+        expected = self.width * self.height
+        size = len(self.encode(grid))
+        if size == expected:
+            return
+        multibyte = [c for c in dict.fromkeys(grid) if len(self.encode(c)) > 1]
+        if multibyte:
+            chars = ', '.join(repr(c) for c in multibyte)
+            raise ValueError(
+                f'{name} contains characters that take more than one byte '
+                f'in {self.encoding}: {chars}. Each grid square must be a '
+                f'single byte; to put a multi-character or non-ASCII value '
+                f'in a square, use a rebus (a placeholder letter in the grid, '
+                f'with the value in the GRBS/RTBL extensions).')
+        raise ValueError(
+            f'{name} is {size} bytes, but a {self.width}x{self.height} grid '
+            f'needs exactly {expected}')
+
     def encode(self, s: str) -> bytes:
         return s.encode(self.encoding, ENCODING_ERRORS)
 
@@ -359,6 +386,7 @@ class Puzzle:
     def set_version(self, version: str | bytes) -> None:
         self.version = version.encode('utf-8') if isinstance(version, str) else bytes(version)
         self.fileversion = self.version + b'\0'
+        self.encoding = encoding_for_version(self.version_tuple())
 
     def has_rebus(self) -> bool:
         if Extensions.Rebus in self.extensions or 'rebus' in self.helpers:
