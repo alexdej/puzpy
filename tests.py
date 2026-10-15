@@ -974,6 +974,36 @@ def test_timer_save_roundtrip() -> None:
     assert p.extensions[puz.Extensions.Timer] == b'42,1'
 
 
+def test_timer_read_only_does_not_inject_extension() -> None:
+    filename = 'testfiles/nyt_nov0596.puz'
+    with open(filename, 'rb') as fp:
+        orig = fp.read()
+    p = puz.read(filename)
+    assert puz.Extensions.Timer not in p.extensions
+    _ = p.timer().elapsed_seconds
+    new = p.tobytes()
+    assert puz.Extensions.Timer not in puz.load(new).extensions
+    assert orig == new, 'reading the timer broke the byte-exact round-trip'
+
+
+def test_timer_read_only_has_timer_is_false() -> None:
+    p = puz.read('testfiles/nyt_nov0596.puz')
+    _ = p.timer().elapsed_seconds
+    assert not p.has_timer()
+    p.timer().elapsed_seconds = 5
+    assert p.has_timer()
+
+
+def test_timer_added_to_puzzle_without_one_is_saved() -> None:
+    p = _make_puzzle()
+    assert not p.has_timer()
+    t = p.timer()
+    t.elapsed_seconds = 30
+    t.status = puz.TimerStatus.Running
+    p.tobytes()  # triggers save()
+    assert p.extensions[puz.Extensions.Timer] == b'30,0'
+
+
 def test_timer_stopped() -> None:
     p = _make_puzzle()
     p.extensions[puz.Extensions.Timer] = b'120,1'

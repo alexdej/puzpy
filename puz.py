@@ -371,7 +371,9 @@ class Puzzle:
         return cast('Rebus', self.helpers['rebus'])
 
     def has_timer(self) -> bool:
-        return Extensions.Timer in self.extensions or 'timer' in self.helpers
+        if Extensions.Timer in self.extensions or 'timer' in self.helpers:
+            return self.timer().has_timer()
+        return False
 
     def remove_timer(self) -> None:
         self.extensions.pop(Extensions.Timer, None)
@@ -971,6 +973,7 @@ class Timer(PuzzleHelper):
 
         self.elapsed_seconds = int(elapsed_str)
         self.status = TimerStatus(int(status_str))
+        self._loaded = (self.elapsed_seconds, self.status)
 
     def is_running(self) -> bool:
         return self.status == TimerStatus.Running
@@ -978,8 +981,14 @@ class Timer(PuzzleHelper):
     def is_stopped(self) -> bool:
         return self.status == TimerStatus.Stopped
 
+    def has_timer(self) -> bool:
+        # a timer the file didn't have only counts once its values are changed
+        return (Extensions.Timer in self.puzzle.extensions
+                or (self.elapsed_seconds, self.status) != self._loaded)
+
     def save(self) -> None:
-        self.puzzle.extensions[Extensions.Timer] = f'{self.elapsed_seconds},{self.status}'.encode()
+        if self.has_timer():
+            self.puzzle.extensions[Extensions.Timer] = f'{self.elapsed_seconds},{self.status}'.encode()
 
 
 # helper functions for cksums and scrambling
