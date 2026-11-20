@@ -1,4 +1,4 @@
-﻿from __future__ import annotations  # for Python 3.9 and earlier
+from __future__ import annotations  # for Python 3.9 and earlier
 
 import importlib.metadata
 import string
@@ -358,6 +358,10 @@ class Puzzle:
 
     def _check_grid_bytes(self, name: str, grid: str) -> None:
         expected = self.width * self.height
+        if len(grid) != expected:
+            raise ValueError(
+                f'{name} is {len(grid)} squares, but a {self.width}x{self.height} grid '
+                f'needs exactly {expected}')
         size = len(self.encode(grid))
         if size == expected:
             return
