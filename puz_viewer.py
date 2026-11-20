@@ -9,7 +9,7 @@ from typing import Any
 import puz
 
 # Generated from viewer_template.html — do not edit directly.
-# Run `make template` (or `python sync_template.py --write`) to update.
+# Run `uv run python sync_template.py --write` to update.
 _TEMPLATE = """\
 <!DOCTYPE html>
 <html lang="en">
