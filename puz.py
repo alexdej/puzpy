@@ -1,4 +1,4 @@
-﻿from __future__ import annotations  # for Python 3.9 and earlier
+from __future__ import annotations  # for Python 3.9 and earlier
 
 import importlib.metadata
 import string
@@ -152,8 +152,13 @@ def read_text(filename: str) -> Puzzle:
     Read an Across Lite .txt text format file and return the Puzzle object.
     raises PuzzleFormatError if there's any problem with the file format.
     """
-    with open(filename, encoding='utf-8', errors='replace') as f:
-        return load_text(f.read())
+    with open(filename, 'rb') as f:
+        data = f.read()
+    try:
+        text = data.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        text = data.decode(ENCODING)
+    return load_text(text)
 
 
 def load(data: bytes) -> Puzzle:
