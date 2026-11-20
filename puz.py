@@ -1,4 +1,4 @@
-﻿from __future__ import annotations  # for Python 3.9 and earlier
+from __future__ import annotations  # for Python 3.9 and earlier
 
 import importlib.metadata
 import string
@@ -1174,7 +1174,7 @@ def from_text_format(s: str) -> Puzzle:
     if 'ACROSS PUZZLE' in d:
         # file_version = 'v1'
         pass
-    elif 'ACROSS PUZZLE v2' in d:
+    elif 'ACROSS PUZZLE V2' in d or 'ACROSS PUZZLE v2' in d:
         # file_version = 'v2'
         pass
     else:
