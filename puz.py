@@ -358,6 +358,10 @@ class Puzzle:
 
     def _check_grid_bytes(self, name: str, grid: str) -> None:
         expected = self.width * self.height
+        if len(grid) != expected:
+            raise ValueError(
+                f'{name} is {len(grid)} squares, but a {self.width}x{self.height} grid '
+                f'needs exactly {expected}')
         size = len(self.encode(grid))
         if size == expected:
             return
@@ -1174,7 +1178,7 @@ def from_text_format(s: str) -> Puzzle:
     if 'ACROSS PUZZLE' in d:
         # file_version = 'v1'
         pass
-    elif 'ACROSS PUZZLE V2' in d or 'ACROSS PUZZLE v2' in d:
+    elif 'ACROSS PUZZLE v2' in d:
         # file_version = 'v2'
         pass
     else:
