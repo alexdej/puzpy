@@ -152,8 +152,13 @@ def read_text(filename: str) -> Puzzle:
     Read an Across Lite .txt text format file and return the Puzzle object.
     raises PuzzleFormatError if there's any problem with the file format.
     """
-    with open(filename, encoding='utf-8', errors='replace') as f:
-        return load_text(f.read())
+    with open(filename, 'rb') as f:
+        data = f.read()
+    try:
+        text = data.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        text = data.decode(ENCODING)
+    return load_text(text)
 
 
 def load(data: bytes) -> Puzzle:
@@ -1174,7 +1179,7 @@ def from_text_format(s: str) -> Puzzle:
     if 'ACROSS PUZZLE' in d:
         # file_version = 'v1'
         pass
-    elif 'ACROSS PUZZLE V2' in d or 'ACROSS PUZZLE v2' in d:
+    elif 'ACROSS PUZZLE v2' in d:
         # file_version = 'v2'
         pass
     else:
