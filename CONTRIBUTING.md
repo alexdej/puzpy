@@ -38,8 +38,9 @@ do differently.
 A PR should also:
 
 - Make one change. Leave unrelated cleanups for a separate PR.
-- Include a test in `tests.py` that fails without the change and passes with
-  it.
+- For behavior changes, include a test in `tests.py` that fails without the
+  change and passes with it. For other changes, explain why a regression test
+  is not applicable.
 - Pass `uv run pytest`, `uv run ruff check` and `uv run pyright` (see the
   README for setup).
 - Say plainly what was and wasn't tested.
